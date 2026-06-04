@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Moje kočička 🐱</title>
+<style>
+  :root {
+    --bg1: #ffe9f3;
+    --bg2: #e7f0ff;
+    --card: #ffffff;
+    --ink: #4a3f5c;
+    --accent: #ff8fb1;
+    --accent-dark: #e76a93;
+    --cat: #b9883f;
+    --cat-dark: #9c6f30;
+    --cat-light: #d6a85e;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    color: var(--ink);
+    background: linear-gradient(160deg, var(--bg1), var(--bg2));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 14px 40px;
+  }
+
+  h1 {
+    margin: 6px 0 2px;
+    font-size: 1.7rem;
+    text-align: center;
+  }
+  .subtitle { margin: 0 0 14px; font-size: .95rem; opacity: .7; }
+
+  .card {
+    background: var(--card);
+    border-radius: 26px;
+    box-shadow: 0 14px 40px rgba(120, 90, 140, .18);
+    padding: 22px 22px 26px;
+    width: 100%;
+    max-width: 440px;
+  }
+
+  /* ---------- Responzivní rozložení (hra + vzhled vedle sebe) ---------- */
+  .layout {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    width: 100%;
+    max-width: 800px;
+    justify-content: center;
+    align-items: stretch;
+  }
+  .layout > .card { margin: 0; }
+  .layout > .card:first-child { flex: 1 1 360px; }   /* hlavní karta s kočkou */
+  .look-card { flex: 1 1 230px; max-width: 300px; }
+  .look-title { margin: 2px 0 16px; font-size: 1.2rem; text-align: center; }
+
+  /* ---------- Scéna s kočkou ---------- */
+  .scene {
+    position: relative;
+    height: 240px;
+    border-radius: 20px;
+    background: linear-gradient(180deg, #fef6ff 0%, #f1e6ff 100%);
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .scene.sleeping { background: linear-gradient(180deg, #2c2547 0%, #3d3266 100%); }
+  .floor {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 46px;
+    background: rgba(180,150,200,.18);
+  }
+
+  .speech {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%) scale(.6);
+    background: #fff;
+    color: var(--ink);
+    padding: 7px 14px;
+    border-radius: 16px;
+    font-size: .9rem;
+    font-weight: 600;
+    box-shadow: 0 4px 14px rgba(0,0,0,.12);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .25s, transform .25s;
+    white-space: nowrap;
+    z-index: 5;
+  }
+  .speech.show { opacity: 1; transform: translateX(-50%) scale(1); }
+  .speech::after {
+    content: "";
+    position: absolute;
+    bottom: -7px; left: 50%;
+    transform: translateX(-50%);
+    border: 7px solid transparent;
+    border-top-color: #fff;
+    border-bottom: 0;
+  }
+
+  /* ---------- Kočka (čisté CSS) ---------- */
+  .cat {
+    position: relative;
+    width: 170px;
+    height: 190px;
+    margin-bottom: 30px;
+    transform-origin: bottom center;
+    animation: breathe 3.4s ease-in-out infinite;
+  }
+  @keyframes breathe {
+    0%, 100% { transform: scaleY(1) translateY(0); }
+    50%      { transform: scaleY(1.025) translateY(-2px); }
+  }
+
+  /* tělo */
+  .body {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 130px;
+    height: 110px;
+    background: var(--cat);
+    border-radius: 60px 60px 52px 52px;
+    z-index: 2;
+  }
+  .belly {
+    position: absolute;
+    bottom: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 78px;
+    height: 80px;
+    background: var(--cat-light);
+    border-radius: 50% 50% 46px 46px;
+    z-index: 3;
+  }
+  /* tlapky */
+  .paw {
+    position: absolute;
+    bottom: 0;
+    width: 40px;
+    height: 26px;
+    background: var(--cat);
+    border-radius: 18px 18px 14px 14px;
+    z-index: 4;
+  }
+  .paw.left  { left: 30px; }
+  .paw.right { right: 30px; }
+
+  /* ocásek */
+  .tail {
+    position: absolute;
+    bottom: 8px;
+    right: 4px;
+    width: 22px;
+    height: 76px;
+    background: var(--cat);
+    border-radius: 14px;
+    transform-origin: bottom center;
+    z-index: 1;
+    animation: wag 2.4s ease-in-out infinite;
+  }
+  @keyframes wag {
+    0%, 100% { transform: rotate(18deg); }
+    50%      { transform: rotate(46deg); }
+  }
+
+  /* hlava */
+  .head {
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 104px;
+    background: var(--cat);
+    border-radius: 50% 50% 46% 46%;
+    z-index: 6;
+  }
+  /* uši */
+  .ear {
+    position: absolute;
+    top: -16px;
+    width: 0; height: 0;
+    border-left: 24px solid transparent;
+    border-right: 24px solid transparent;
+    border-bottom: 40px solid var(--cat);
+    z-index: 5;
+  }
+  .ear.left  { left: 6px;  transform: rotate(-18deg); }
+  .ear.right { right: 6px; transform: rotate(18deg); }
+  .ear::after {
+    content: "";
+    position: absolute;
+    left: -12px; top: 16px;
+    width: 0; height: 0;
+    border-left: 12px solid transparent;
+    border-right: 12px solid transparent;
+    border-bottom: 20px solid #f3b6c9;
+  }
+
+  /* oči */
+  .eye {
+    position: absolute;
+    top: 40px;
+    width: 20px;
+    height: 24px;
+    background: var(--eye, #2c2540);
+    border-radius: 50%;
+    z-index: 7;
+    transition: height .12s ease;
+  }
+  .eye.left  { left: 28px; }
+  .eye.right { right: 28px; }
+  .eye::after {
+    content: "";
+    position: absolute;
+    top: 4px; left: 4px;
+    width: 7px; height: 7px;
+    background: #fff;
+    border-radius: 50%;
+  }
+  /* mrkání */
+  .cat.blink .eye { height: 3px; }
+  .cat.blink .eye::after { opacity: 0; }
+  /* spánek = zavřené oči (oblouček) */
+  .cat.asleep .eye {
+    height: 10px;
+    background: transparent;
+    border-bottom: 4px solid var(--eye, #2c2540);
+    border-radius: 0 0 12px 12px;
+    top: 48px;
+  }
+  .cat.asleep .eye::after { opacity: 0; }
+
+  /* tváře */
+  .cheek {
+    position: absolute;
+    top: 62px;
+    width: 18px; height: 12px;
+    background: #f7a8c0;
+    border-radius: 50%;
+    opacity: .7;
+    z-index: 7;
+  }
+  .cheek.left  { left: 16px; }
+  .cheek.right { right: 16px; }
+
+  /* čumák + pusa */
+  .nose {
+    position: absolute;
+    top: 60px; left: 50%;
+    transform: translateX(-50%);
+    width: 14px; height: 10px;
+    background: #e76a93;
+    border-radius: 50% 50% 50% 50%;
+    z-index: 8;
+  }
+  .mouth {
+    position: absolute;
+    top: 72px; left: 50%;
+    transform: translateX(-50%);
+    width: 22px; height: 11px;
+    border: 2.5px solid #6b4a2b;
+    border-top: 0;
+    border-radius: 0 0 14px 14px;
+    z-index: 7;
+  }
+  /* smutná pusa */
+  .cat.sad .mouth { border: 0; border-top: 2.5px solid #6b4a2b; border-radius: 14px 14px 0 0; top: 78px; }
+
+  /* vousky */
+  .whisker {
+    position: absolute;
+    top: 64px;
+    width: 38px; height: 2px;
+    background: rgba(80,60,40,.55);
+    border-radius: 2px;
+    z-index: 7;
+  }
+  .whisker.l1 { left: -22px; transform: rotate(8deg); }
+  .whisker.l2 { left: -22px; top: 72px; transform: rotate(-6deg); }
+  .whisker.r1 { right: -22px; transform: rotate(-8deg); }
+  .whisker.r2 { right: -22px; top: 72px; transform: rotate(6deg); }
+
+  /* ---------- Varianty uší ---------- */
+  /* kulaté uši */
+  .cat.ears-round .ear {
+    border: 0;
+    top: -10px;
+    width: 44px; height: 44px;
+    background: var(--cat);
+    border-radius: 50%;
+  }
+  .cat.ears-round .ear.left  { left: 6px;  transform: rotate(0deg); }
+  .cat.ears-round .ear.right { right: 6px; transform: rotate(0deg); }
+  .cat.ears-round .ear::after {
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    border: 0;
+    width: 22px; height: 22px;
+    background: #f3b6c9;
+    border-radius: 50%;
+  }
+
+  /* ---------- Varianty ocásku ---------- */
+  .cat.tail-fluffy .tail { width: 34px; right: 0; border-radius: 18px; }
+  .cat.tail-short  .tail { height: 44px; }
+
+  /* ---------- Vzor: mourovatá (tabby) ---------- */
+  /* jemné pruhy jen po bocích těla (břicho je zakryje) */
+  .cat.tabby .body {
+    background-image:
+      repeating-linear-gradient(94deg,
+        transparent 0 18px,
+        rgba(55,38,22,.15) 18px 21px);
+  }
+  /* tabby znak na čele – pár tenkých čárek mezi oušky */
+  .cat.tabby .head::before {
+    content: "";
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 52px;
+    height: 24px;
+    background: repeating-linear-gradient(90deg,
+      transparent 0 6px,
+      rgba(55,38,22,.17) 6px 8.5px);
+    -webkit-mask-image: radial-gradient(ellipse at top, #000 55%, transparent 78%);
+    mask-image: radial-gradient(ellipse at top, #000 55%, transparent 78%);
+    z-index: 6;
+  }
+  /* jemné svislé pruhy na ocásku */
+  .cat.tabby .tail {
+    background-image: repeating-linear-gradient(90deg,
+      transparent 0 6px,
+      rgba(55,38,22,.16) 6px 9px);
+  }
+
+  /* ---------- Duhová srst ---------- */
+  .cat.rainbow-fur {
+    --rainbow: linear-gradient(105deg,
+      #ff9aa2, #ffd36e, #b6f08a, #7fe0d8, #8ab6ff, #d79bff);
+  }
+  .cat.rainbow-fur .head,
+  .cat.rainbow-fur .body,
+  .cat.rainbow-fur .paw { background-image: var(--rainbow); }
+  .cat.rainbow-fur .tail {
+    background-image: linear-gradient(180deg,
+      #ff9aa2, #ffd36e, #b6f08a, #7fe0d8, #8ab6ff, #d79bff);
+  }
+  .cat.rainbow-fur .belly { background: rgba(255,255,255,.5); }
+  .cat.rainbow-fur.ears-round .ear { background-image: var(--rainbow); }
+
+  /* ---------- Poloha: ležící ---------- */
+  /* širší, nižší rámec – kočka leží podél */
+  .cat.lying {
+    width: 210px;
+    height: 160px;
+  }
+  /* hlava položená dole vlevo u země, lehce nakloněná */
+  .cat.lying .head {
+    top: auto;
+    bottom: 0;
+    left: 0;
+    transform: rotate(-7deg);
+  }
+  /* tělo – dlouhý ovál vpravo, mírně zvednutý */
+  .cat.lying .body {
+    left: auto;
+    right: 0;
+    transform: none;
+    width: 172px;
+    height: 66px;
+    bottom: 4px;
+    border-radius: 50% 50% 46% 46% / 64% 64% 42% 42%;
+  }
+  /* světlejší podsada vpravo dole */
+  .cat.lying .belly {
+    left: auto;
+    right: 12px;
+    transform: none;
+    width: 116px;
+    height: 30px;
+    bottom: 6px;
+    border-radius: 50%;
+  }
+  /* tlapky schované pod tělem (jen vykukují) */
+  .cat.lying .paw {
+    width: 30px;
+    height: 15px;
+    bottom: 0;
+    border-radius: 12px 12px 10px 10px;
+  }
+  .cat.lying .paw.left  { left: 118px; right: auto; }
+  .cat.lying .paw.right { left: 152px; right: auto; }
+  /* ocásek položený podél těla vpravo */
+  .cat.lying .tail {
+    left: auto;
+    right: -8px;
+    bottom: 2px;
+    height: 50px;
+    animation: wagLie 2.8s ease-in-out infinite;
+  }
+  @keyframes wagLie {
+    0%, 100% { transform: rotate(74deg); }
+    50%      { transform: rotate(86deg); }
+  }
+
+  /* ---------- Animace akcí ---------- */
+  .cat.jump   { animation: jump .55s ease; }
+  @keyframes jump {
+    0%,100% { transform: translateY(0); }
+    40%     { transform: translateY(-46px); }
+    60%     { transform: translateY(-46px); }
+  }
+  .cat.wiggle { animation: wiggle .6s ease; }
+  @keyframes wiggle {
+    0%,100% { transform: rotate(0); }
+    25%     { transform: rotate(-6deg); }
+    75%     { transform: rotate(6deg); }
+  }
+
+  /* poletující srdíčka / symboly */
+  .float-emoji {
+    position: absolute;
+    font-size: 1.7rem;
+    pointer-events: none;
+    animation: floatUp 1.2s ease-out forwards;
+    z-index: 9;
+  }
+  @keyframes floatUp {
+    0%   { opacity: 0; transform: translateY(0) scale(.6); }
+    20%  { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-90px) scale(1.2); }
+  }
+  /* spící Z */
+  .zzz {
+    position: absolute;
+    top: 30px; right: 46px;
+    color: #cdbcf5;
+    font-weight: 700;
+    font-size: 1.4rem;
+    opacity: 0;
+    z-index: 9;
+  }
+  .scene.sleeping .zzz { animation: zzz 2.2s ease-in-out infinite; }
+  @keyframes zzz {
+    0%   { opacity: 0; transform: translateY(0) scale(.6); }
+    30%  { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-50px) translateX(20px) scale(1.3); }
+  }
+
+  /* ---------- Ukazatele ---------- */
+  .stats { margin: 18px 2px 6px; }
+  .stat { margin-bottom: 12px; }
+  .stat-top {
+    display: flex;
+    justify-content: space-between;
+    font-size: .92rem;
+    font-weight: 600;
+    margin-bottom: 5px;
+  }
+  .bar {
+    height: 16px;
+    background: #eee4ef;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .bar > span {
+    display: block;
+    height: 100%;
+    width: 100%;
+    border-radius: 10px;
+    transition: width .4s ease, background .4s ease;
+  }
+  .bar.hunger > span  { background: linear-gradient(90deg,#ffb347,#ff7b54); }
+  .bar.happy  > span  { background: linear-gradient(90deg,#ffd166,#ff8fb1); }
+  .bar.energy > span  { background: linear-gradient(90deg,#7ad0ff,#5b8def); }
+  .bar.clean  > span  { background: linear-gradient(90deg,#7be3c4,#39c0a0); }
+  .bar.low > span     { background: linear-gradient(90deg,#ff6b6b,#d63447) !important; }
+
+  /* ---------- Tlačítka ---------- */
+  .actions {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-top: 16px;
+  }
+  button.action {
+    border: 0;
+    border-radius: 16px;
+    padding: 14px 8px;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+    cursor: pointer;
+    background: var(--accent);
+    box-shadow: 0 5px 0 var(--accent-dark);
+    transition: transform .08s, box-shadow .08s, opacity .2s;
+  }
+  button.action:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--accent-dark); }
+  button.action:disabled { opacity: .45; cursor: not-allowed; box-shadow: 0 5px 0 var(--accent-dark); }
+  .btn-feed  { background:#ff9f43; box-shadow:0 5px 0 #e07d1c; }
+  .btn-play  { background:#ff8fb1; box-shadow:0 5px 0 #e0648c; }
+  .btn-pet   { background:#c084fc; box-shadow:0 5px 0 #9d57e0; }
+  .btn-clean { background:#39c0a0; box-shadow:0 5px 0 #1f9c7e; }
+  .btn-sleep { background:#5b8def; box-shadow:0 5px 0 #3a6bd0; grid-column: span 2; }
+
+  .footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 18px;
+    font-size: .85rem;
+    opacity: .8;
+  }
+  .link-btn {
+    background: none; border: 0; color: var(--accent-dark);
+    font-weight: 700; cursor: pointer; font-size: .85rem;
+  }
+  .link-btn:hover { text-decoration: underline; }
+
+  /* ---------- Úvodní obrazovka ---------- */
+  .overlay {
+    position: fixed; inset: 0;
+    background: rgba(60,40,80,.55);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    z-index: 50;
+  }
+  .overlay.hidden { display: none; }
+  .dialog {
+    background: #fff;
+    border-radius: 24px;
+    padding: 28px 24px;
+    max-width: 360px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 20px 50px rgba(0,0,0,.3);
+  }
+  .dialog h2 { margin: 0 0 6px; }
+  .dialog p { margin: 0 0 18px; opacity: .75; font-size: .92rem; }
+  .dialog input {
+    width: 100%;
+    padding: 12px 14px;
+    font-size: 1rem;
+    border: 2px solid #eadff0;
+    border-radius: 14px;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+  .dialog input:focus { outline: none; border-color: var(--accent); }
+  .dialog button {
+    width: 100%;
+    border: 0;
+    border-radius: 14px;
+    padding: 14px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #fff;
+    background: var(--accent);
+    box-shadow: 0 5px 0 var(--accent-dark);
+    cursor: pointer;
+  }
+  .dialog button:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--accent-dark); }
+
+  /* ---------- Panel vzhledu ---------- */
+  .look-section { margin-bottom: 16px; }
+  .look-label { font-weight: 700; font-size: .92rem; margin-bottom: 8px; }
+  .swatches { display: flex; flex-wrap: wrap; gap: 10px; }
+  .swatch {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 2px #e3d9ec;
+    cursor: pointer;
+    padding: 0;
+    transition: box-shadow .12s, transform .08s;
+  }
+  .swatch:active { transform: scale(.92); }
+  .swatch.sel { box-shadow: 0 0 0 3px var(--accent-dark); }
+  .opt-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .opt-btn {
+    border: 2px solid #eadff0;
+    background: #fff;
+    color: var(--ink);
+    border-radius: 12px;
+    padding: 9px 15px;
+    font-size: .9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .12s, border-color .12s, color .12s;
+  }
+  .opt-btn.sel { border-color: var(--accent-dark); background: var(--accent); color: #fff; }
+
+  /* ---------- Responzivní jemné doladění ---------- */
+  @media (max-width: 720px) {
+    .look-card { max-width: 440px; }   /* na mobilu plná šířka pod kočkou */
+  }
+  @media (max-width: 420px) {
+    body { padding: 14px 10px 30px; }
+    .card { padding: 18px 16px 20px; }
+    h1 { font-size: 1.45rem; }
+    .scene { height: 210px; }
+    .actions { gap: 8px; }
+    button.action { padding: 12px 6px; font-size: .95rem; }
+  }
+</style>
+</head>
+<body>
+
+  <h1>Moje kočička <span id="catNameTitle"></span></h1>
+  <p class="subtitle">Starej se o ni, ať je šťastná! 🐾</p>
+
+  <div class="layout">
+  <div class="card">
+    <div class="scene" id="scene">
+      <div class="floor"></div>
+      <div class="speech" id="speech"></div>
+      <div class="zzz">z</div>
+
+      <div class="cat" id="cat">
+        <div class="tail"></div>
+        <div class="paw left"></div>
+        <div class="paw right"></div>
+        <div class="body"></div>
+        <div class="belly"></div>
+        <div class="head">
+          <div class="ear left"></div>
+          <div class="ear right"></div>
+          <div class="eye left"></div>
+          <div class="eye right"></div>
+          <div class="cheek left"></div>
+          <div class="cheek right"></div>
+          <div class="nose"></div>
+          <div class="mouth"></div>
+          <div class="whisker l1"></div>
+          <div class="whisker l2"></div>
+          <div class="whisker r1"></div>
+          <div class="whisker r2"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-top"><span>🍗 Sytost</span><span id="hungerVal">100%</span></div>
+        <div class="bar hunger" id="hungerBar"><span></span></div>
+      </div>
+      <div class="stat">
+        <div class="stat-top"><span>😺 Štěstí</span><span id="happyVal">100%</span></div>
+        <div class="bar happy" id="happyBar"><span></span></div>
+      </div>
+      <div class="stat">
+        <div class="stat-top"><span>⚡ Energie</span><span id="energyVal">100%</span></div>
+        <div class="bar energy" id="energyBar"><span></span></div>
+      </div>
+      <div class="stat">
+        <div class="stat-top"><span>🧼 Čistota</span><span id="cleanVal">100%</span></div>
+        <div class="bar clean" id="cleanBar"><span></span></div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="action btn-feed"  id="btnFeed">🍗 Nakrmit</button>
+      <button class="action btn-play"  id="btnPlay">🧶 Hrát</button>
+      <button class="action btn-pet"   id="btnPet">💗 Pohladit</button>
+      <button class="action btn-clean" id="btnClean">🧼 Uklidit</button>
+      <button class="action btn-sleep" id="btnSleep">😴 Spát</button>
+    </div>
+
+    <div class="footer">
+      <span id="moodText">Spokojená kočička 😊</span>
+      <button class="link-btn" id="btnReset">Nová hra</button>
+    </div>
+  </div>
+
+  <!-- Panel vzhledu (vedle kočky) -->
+  <aside class="card look-card">
+    <h2 class="look-title">Vzhled 🎨</h2>
+    <div class="look-section">
+      <div class="look-label">Barva srsti</div>
+      <div class="swatches" id="colorOpts"></div>
+    </div>
+    <div class="look-section">
+      <div class="look-label">Vzor</div>
+      <div class="opt-row" id="patternOpts"></div>
+    </div>
+    <div class="look-section">
+      <div class="look-label">Oči</div>
+      <div class="swatches" id="eyeOpts"></div>
+    </div>
+    <div class="look-section">
+      <div class="look-label">Uši</div>
+      <div class="opt-row" id="earOpts"></div>
+    </div>
+    <div class="look-section">
+      <div class="look-label">Ocásek</div>
+      <div class="opt-row" id="tailOpts"></div>
+    </div>
+    <div class="look-section">
+      <div class="look-label">Poloha</div>
+      <div class="opt-row" id="poseOpts"></div>
+    </div>
+  </aside>
+  </div>
+
+  <!-- Úvodní obrazovka -->
+  <div class="overlay" id="startOverlay">
+    <div class="dialog">
+      <h2>Vítej! 🐱</h2>
+      <p>Jak se bude tvoje kočička jmenovat?</p>
+      <input id="nameInput" type="text" maxlength="14" placeholder="Např. Micka" autocomplete="off">
+      <button id="startBtn">Začít hrát</button>
+    </div>
+  </div>
+
+<script>
+(function () {
+  "use strict";
+
+  const SAVE_KEY = "kocky_save_v1";
+  const MAX = 100;
+
+  // Stav hry
+  let state = {
+    name: "Micka",
+    hunger: 100,  // sytost
+    happy: 100,   // štěstí
+    energy: 100,  // energie
+    clean: 100,   // čistota
+    sleeping: false,
+    appearance: { color: "zrzava", pattern: "jednobarevna", eyes: "tmava", ears: "spicate", tail: "dlouhy", pose: "sedici" },
+    lastTick: Date.now()
+  };
+
+  // ----- Možnosti vzhledu -----
+  const PALETTES = {
+    zrzava: { cat: "#b9883f", dark: "#9c6f30", light: "#d6a85e", label: "Zrzavá" },
+    seda:   { cat: "#9aa0a8", dark: "#7c828b", light: "#c6cbd1", label: "Šedá" },
+    cerna:  { cat: "#54506a", dark: "#403c54", light: "#736f8c", label: "Černá" },
+    bila:   { cat: "#ece3d0", dark: "#cabfa6", light: "#fbf6ea", label: "Bílá" },
+    hneda:  { cat: "#8a5a3b", dark: "#6f4730", light: "#a87a55", label: "Hnědá" },
+    ruzova: { cat: "#f0a9c4", dark: "#d77fa0", light: "#ffd0e0", label: "Růžová" },
+    svetlemodra: { cat: "#aacdf5", dark: "#7fa8d8", light: "#d6e8fb", label: "Světle modrá" },
+    duhova: {
+      cat: "#ff9aa2", dark: "#c98bd6", light: "#ffd6ea", label: "Duhová",
+      rainbow: true,
+      swatch: "linear-gradient(135deg,#ff9aa2,#ffd36e,#b6f08a,#7fe0d8,#8ab6ff,#d79bff)"
+    }
+  };
+  const EYES = {
+    tmava:  { color: "#2c2540", label: "Tmavé" },
+    zelena: { color: "#3a9d5d", label: "Zelené" },
+    modra:  { color: "#3f86d6", label: "Modré" },
+    jantar: { color: "#e0962f", label: "Jantarové" }
+  };
+  const PATTERNS = { jednobarevna: "Jednobarevná", mourovata: "Mourovatá" };
+  const EARS  = { spicate: "Špičaté", kulate: "Kulaté" };
+  const TAILS = { dlouhy: "Dlouhý", nadychany: "Nadýchaný", kratky: "Krátký" };
+  const POSES = { sedici: "Sedící", lezici: "Ležící" };
+
+  // Rychlost poklesu hodnot za 1 sekundu (bdění)
+  const DECAY = { hunger: 0.55, happy: 0.45, energy: 0.40, clean: 0.30 };
+  // Při spánku
+  const DECAY_SLEEP = { hunger: 0.25, happy: 0.15, clean: 0.15 };
+  const ENERGY_GAIN_SLEEP = 1.6; // za sekundu
+
+  // ----- DOM -----
+  const el = (id) => document.getElementById(id);
+  const cat = el("cat");
+  const scene = el("scene");
+  const speech = el("speech");
+  const startOverlay = el("startOverlay");
+
+  const bars = {
+    hunger: { bar: el("hungerBar"), span: el("hungerBar").firstElementChild, val: el("hungerVal") },
+    happy:  { bar: el("happyBar"),  span: el("happyBar").firstElementChild,  val: el("happyVal") },
+    energy: { bar: el("energyBar"), span: el("energyBar").firstElementChild, val: el("energyVal") },
+    clean:  { bar: el("cleanBar"),  span: el("cleanBar").firstElementChild,  val: el("cleanVal") }
+  };
+
+  const clamp = (v) => Math.max(0, Math.min(MAX, v));
+
+  // ----- Uložení / načtení -----
+  function save() {
+    state.lastTick = Date.now();
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(SAVE_KEY);
+      if (!raw) return false;
+      const data = JSON.parse(raw);
+      if (typeof data !== "object" || data === null) return false;
+      state = Object.assign(state, data);
+      // Dopočítej pokles podle uplynulého času (max 24 h, ať to není drsné)
+      const elapsedSec = Math.min((Date.now() - (state.lastTick || Date.now())) / 1000, 86400);
+      applyDecay(elapsedSec);
+      return true;
+    } catch (e) { return false; }
+  }
+
+  function applyDecay(sec) {
+    if (state.sleeping) {
+      state.hunger = clamp(state.hunger - DECAY_SLEEP.hunger * sec);
+      state.happy  = clamp(state.happy  - DECAY_SLEEP.happy  * sec);
+      state.clean  = clamp(state.clean  - DECAY_SLEEP.clean  * sec);
+      state.energy = clamp(state.energy + ENERGY_GAIN_SLEEP * sec);
+      if (state.energy >= MAX) { state.energy = MAX; state.sleeping = false; }
+    } else {
+      state.hunger = clamp(state.hunger - DECAY.hunger * sec);
+      state.happy  = clamp(state.happy  - DECAY.happy  * sec);
+      state.energy = clamp(state.energy - DECAY.energy * sec);
+      state.clean  = clamp(state.clean  - DECAY.clean  * sec);
+    }
+  }
+
+  // ----- Vzhled -----
+  function applyAppearance() {
+    const a = state.appearance || (state.appearance = {});
+    const p = PALETTES[a.color] || PALETTES.zrzava;
+    cat.style.setProperty("--cat", p.cat);
+    cat.style.setProperty("--cat-dark", p.dark);
+    cat.style.setProperty("--cat-light", p.light);
+    cat.classList.toggle("rainbow-fur", !!p.rainbow);
+
+    const e = EYES[a.eyes] || EYES.tmava;
+    cat.style.setProperty("--eye", e.color);
+
+    cat.classList.toggle("tabby", a.pattern === "mourovata");
+
+    cat.classList.toggle("ears-round", a.ears === "kulate");
+
+    cat.classList.remove("tail-fluffy", "tail-short");
+    if (a.tail === "nadychany") cat.classList.add("tail-fluffy");
+    else if (a.tail === "kratky") cat.classList.add("tail-short");
+
+    cat.classList.toggle("lying", a.pose === "lezici");
+  }
+
+  function buildLookPanel() {
+    const a = state.appearance;
+
+    // Barvy
+    const colorBox = el("colorOpts");
+    colorBox.innerHTML = "";
+    Object.keys(PALETTES).forEach((key) => {
+      const p = PALETTES[key];
+      const b = document.createElement("button");
+      b.className = "swatch" + (a.color === key ? " sel" : "");
+      b.style.background = p.swatch || p.cat;
+      b.title = p.label;
+      b.setAttribute("aria-label", p.label);
+      b.addEventListener("click", () => {
+        a.color = key;
+        markSel(colorBox, b);
+        afterLook();
+      });
+      colorBox.appendChild(b);
+    });
+
+    // Vzor srsti
+    buildOptRow(el("patternOpts"), PATTERNS, "pattern");
+
+    // Oči
+    const eyeBox = el("eyeOpts");
+    eyeBox.innerHTML = "";
+    Object.keys(EYES).forEach((key) => {
+      const e = EYES[key];
+      const b = document.createElement("button");
+      b.className = "swatch" + (a.eyes === key ? " sel" : "");
+      b.style.background = e.color;
+      b.title = e.label;
+      b.setAttribute("aria-label", e.label);
+      b.addEventListener("click", () => {
+        a.eyes = key;
+        markSel(eyeBox, b);
+        afterLook();
+      });
+      eyeBox.appendChild(b);
+    });
+
+    // Uši
+    buildOptRow(el("earOpts"), EARS, "ears");
+    // Ocásek
+    buildOptRow(el("tailOpts"), TAILS, "tail");
+    // Poloha
+    buildOptRow(el("poseOpts"), POSES, "pose");
+  }
+
+  function buildOptRow(box, options, prop) {
+    box.innerHTML = "";
+    Object.keys(options).forEach((key) => {
+      const b = document.createElement("button");
+      b.className = "opt-btn" + (state.appearance[prop] === key ? " sel" : "");
+      b.textContent = options[key];
+      b.addEventListener("click", () => {
+        state.appearance[prop] = key;
+        markSel(box, b);
+        afterLook();
+      });
+      box.appendChild(b);
+    });
+  }
+
+  function markSel(box, btn) {
+    box.querySelectorAll(".sel").forEach((x) => x.classList.remove("sel"));
+    btn.classList.add("sel");
+  }
+
+  function afterLook() {
+    applyAppearance();
+    save();
+  }
+
+  // ----- Vykreslení -----
+  function render() {
+    applyAppearance();
+
+    for (const key in bars) {
+      const v = Math.round(state[key]);
+      bars[key].span.style.width = v + "%";
+      bars[key].val.textContent = v + "%";
+      bars[key].bar.classList.toggle("low", v <= 25);
+    }
+    el("catNameTitle").textContent = state.name ? "– " + state.name : "";
+
+    // Spánek
+    scene.classList.toggle("sleeping", state.sleeping);
+    cat.classList.toggle("asleep", state.sleeping);
+    el("btnSleep").textContent = state.sleeping ? "☀️ Probudit" : "😴 Spát";
+
+    // Nálada + výraz
+    updateMood();
+    updateButtons();
+  }
+
+  function avg() {
+    return (state.hunger + state.happy + state.energy + state.clean) / 4;
+  }
+
+  function updateMood() {
+    const moodEl = el("moodText");
+    cat.classList.remove("sad");
+
+    if (state.sleeping) {
+      moodEl.textContent = state.name + " spinká… 💤";
+      return;
+    }
+    // Priorita konkrétních potřeb
+    if (state.hunger <= 25)      { moodEl.textContent = "Mám hlad! 🍗"; cat.classList.add("sad"); }
+    else if (state.clean <= 25)  { moodEl.textContent = "Je mi špinavo… 🧼"; cat.classList.add("sad"); }
+    else if (state.energy <= 25) { moodEl.textContent = "Jsem unavená… 😪"; }
+    else if (state.happy <= 25)  { moodEl.textContent = "Je mi smutno… 😿"; cat.classList.add("sad"); }
+    else if (avg() >= 75)        { moodEl.textContent = "Spokojená kočička 😻"; }
+    else                          { moodEl.textContent = "V pohodě 😺"; }
+  }
+
+  function updateButtons() {
+    const sleeping = state.sleeping;
+    // Během spánku jdou jen probudit; ostatní akce vypnuté
+    el("btnFeed").disabled  = sleeping;
+    el("btnPlay").disabled  = sleeping || state.energy < 8;
+    el("btnPet").disabled   = sleeping;
+    el("btnClean").disabled = sleeping;
+  }
+
+  // ----- Efekty -----
+  function showSpeech(text) {
+    speech.textContent = text;
+    speech.classList.add("show");
+    clearTimeout(showSpeech._t);
+    showSpeech._t = setTimeout(() => speech.classList.remove("show"), 1300);
+  }
+
+  function floatEmoji(symbol, count) {
+    count = count || 3;
+    for (let i = 0; i < count; i++) {
+      const s = document.createElement("div");
+      s.className = "float-emoji";
+      s.textContent = symbol;
+      s.style.left = (35 + Math.random() * 30) + "%";
+      s.style.bottom = (90 + Math.random() * 20) + "px";
+      s.style.animationDelay = (i * 0.12) + "s";
+      scene.appendChild(s);
+      setTimeout(() => s.remove(), 1400 + i * 120);
+    }
+  }
+
+  function animateCat(cls) {
+    cat.classList.remove("jump", "wiggle");
+    void cat.offsetWidth; // restart animace
+    cat.classList.add(cls);
+    setTimeout(() => cat.classList.remove(cls), 650);
+  }
+
+  // ----- Akce -----
+  function feed() {
+    if (state.sleeping) return;
+    state.hunger = clamp(state.hunger + 28);
+    state.clean  = clamp(state.clean - 4);
+    animateCat("jump");
+    floatEmoji("🍗");
+    showSpeech("Mňam! 😋");
+    after();
+  }
+
+  function play() {
+    if (state.sleeping || state.energy < 8) return;
+    state.happy  = clamp(state.happy + 26);
+    state.energy = clamp(state.energy - 12);
+    state.hunger = clamp(state.hunger - 6);
+    animateCat("jump");
+    floatEmoji("🧶");
+    showSpeech("Jupí! 🐾");
+    after();
+  }
+
+  function pet() {
+    if (state.sleeping) return;
+    state.happy = clamp(state.happy + 16);
+    animateCat("wiggle");
+    floatEmoji("💗");
+    showSpeech("Předu… 😽");
+    after();
+  }
+
+  function clean() {
+    if (state.sleeping) return;
+    state.clean = clamp(state.clean + 35);
+    state.happy = clamp(state.happy + 4);
+    animateCat("wiggle");
+    floatEmoji("✨");
+    showSpeech("Čisto! 🧼");
+    after();
+  }
+
+  function toggleSleep() {
+    state.sleeping = !state.sleeping;
+    if (state.sleeping) showSpeech("Dobrou noc… 😴");
+    else showSpeech("Dobré ráno! ☀️");
+    after();
+  }
+
+  function after() {
+    render();
+    save();
+  }
+
+  // ----- Mrkání -----
+  function scheduleBlink() {
+    const delay = 2200 + Math.random() * 3200;
+    setTimeout(() => {
+      if (!state.sleeping) {
+        cat.classList.add("blink");
+        setTimeout(() => cat.classList.remove("blink"), 160);
+      }
+      scheduleBlink();
+    }, delay);
+  }
+
+  // ----- Hlavní smyčka -----
+  function tick() {
+    applyDecay(1); // 1 sekunda
+    render();
+    save();
+  }
+
+  // ----- Nová hra -----
+  function newGame(name) {
+    const keepLook = state.appearance || { color: "zrzava", pattern: "jednobarevna", eyes: "tmava", ears: "spicate", tail: "dlouhy", pose: "sedici" };
+    state = {
+      name: name || "Micka",
+      hunger: 100, happy: 100, energy: 100, clean: 100,
+      sleeping: false,
+      appearance: keepLook,
+      lastTick: Date.now()
+    };
+    save();
+    render();
+  }
+
+  // ----- Start -----
+  function bindEvents() {
+    el("btnFeed").addEventListener("click", feed);
+    el("btnPlay").addEventListener("click", play);
+    el("btnPet").addEventListener("click", pet);
+    el("btnClean").addEventListener("click", clean);
+    el("btnSleep").addEventListener("click", toggleSleep);
+
+    el("btnReset").addEventListener("click", () => {
+      if (confirm("Opravdu začít novou hru? Tvoje kočička začne od začátku.")) {
+        startOverlay.classList.remove("hidden");
+        el("nameInput").value = state.name || "";
+        el("nameInput").focus();
+      }
+    });
+
+    el("startBtn").addEventListener("click", startFromDialog);
+    el("nameInput").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") startFromDialog();
+    });
+  }
+
+  function startFromDialog() {
+    const name = el("nameInput").value.trim() || "Micka";
+    newGame(name);
+    startOverlay.classList.add("hidden");
+  }
+
+  function init() {
+    bindEvents();
+    scheduleBlink();
+
+    const hadSave = load();
+    // Doplň chybějící klíče vzhledu (kvůli starším uloženým hrám)
+    state.appearance = Object.assign(
+      { color: "zrzava", pattern: "jednobarevna", eyes: "tmava", ears: "spicate", tail: "dlouhy", pose: "sedici" },
+      state.appearance || {}
+    );
+    buildLookPanel(); // až po načtení, ať panel ukazuje uložený vzhled
+    if (hadSave) {
+      startOverlay.classList.add("hidden");
+      render();
+    } else {
+      // První spuštění → zeptej se na jméno
+      startOverlay.classList.remove("hidden");
+      el("nameInput").focus();
+      render();
+    }
+
+    // Herní smyčka každou 1 s
+    setInterval(tick, 1000);
+    // Ulož i při zavření
+    window.addEventListener("beforeunload", save);
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
