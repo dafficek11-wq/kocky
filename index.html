@@ -355,6 +355,41 @@
   /* pivo jen pro sedící kočku – v leže se nezobrazuje */
   .cat.lying.has-beer .beer { display: none; }
 
+  /* ---------- Doplněk: sklenice vína ---------- */
+  .wine { display: none; }
+  .cat.has-wine .wine {
+    display: block;
+    position: absolute;
+    z-index: 9;
+    right: 14px;
+    bottom: 18px;
+    width: 22px;
+    height: 22px;
+    background: linear-gradient(180deg, #a52742 0%, #7c1830 100%);
+    border: 2px solid rgba(255,255,255,.6);
+    border-radius: 5px 5px 46% 46% / 5px 5px 80% 80%;
+    box-shadow: inset -3px 0 0 rgba(255,255,255,.16);
+  }
+  .cat.has-wine .wine::before {   /* stopka */
+    content: "";
+    position: absolute;
+    left: 50%; bottom: -13px;
+    transform: translateX(-50%);
+    width: 3px; height: 14px;
+    background: rgba(225,216,230,.9);
+  }
+  .cat.has-wine .wine::after {    /* podstavec */
+    content: "";
+    position: absolute;
+    left: 50%; bottom: -15px;
+    transform: translateX(-50%);
+    width: 16px; height: 4px;
+    background: rgba(225,216,230,.95);
+    border-radius: 50%;
+  }
+  /* víno jen pro sedící kočku – v leže se nezobrazuje */
+  .cat.lying.has-wine .wine { display: none; }
+
   /* ---------- Veselá nálada (po napití) ---------- */
   .cat.merry { animation: merry .9s ease-in-out infinite; }
   @keyframes merry {
@@ -362,6 +397,33 @@
     50%      { transform: rotate(3.5deg); }
   }
   .cat.merry .cheek { opacity: 1; width: 22px; height: 14px; }
+
+  /* ---------- Veselá po víně: poskakování + šťastný obličej ---------- */
+  .cat.merry-wine { animation: merryWine 1s ease-in-out infinite; }
+  @keyframes merryWine {
+    0%, 100% { transform: translateY(0) rotate(-3deg); }
+    20%      { transform: translateY(-12px) rotate(0deg); }
+    40%      { transform: translateY(0) rotate(3deg); }
+    60%      { transform: translateY(-9px) rotate(0deg); }
+    80%      { transform: translateY(0) rotate(-3deg); }
+  }
+  /* přimhouřené šťastné oči (^^) */
+  .cat.merry-wine .eye {
+    height: 10px;
+    background: transparent;
+    border-top: 4px solid var(--eye, #2c2540);
+    border-bottom: 0;
+    border-radius: 12px 12px 0 0;
+    top: 44px;
+  }
+  .cat.merry-wine .eye::after { opacity: 0; }
+  /* velký úsměv */
+  .cat.merry-wine .mouth {
+    width: 26px;
+    height: 16px;
+    border-width: 3px;
+    top: 70px;
+  }
 
   /* ---------- Vzor: mourovatá (tabby) ---------- */
   /* jemné pruhy jen po bocích těla (břicho je zakryje) */
@@ -725,6 +787,7 @@
         <div class="paw left"></div>
         <div class="paw right"></div>
         <div class="beer"></div>
+        <div class="wine"></div>
         <div class="body"></div>
         <div class="belly"></div>
         <div class="head">
@@ -866,7 +929,7 @@
   const EARS  = { spicate: "Špičaté", kulate: "Kulaté" };
   const TAILS = { dlouhy: "Dlouhý", nadychany: "Nadýchaný", kratky: "Krátký" };
   const POSES = { sedici: "Sedící", lezici: "Ležící" };
-  const ACCESSORIES = { zadny: "Žádný", pivo: "Pivo 🍺" };
+  const ACCESSORIES = { zadny: "Žádný", pivo: "Pivo 🍺", vino: "Víno 🍷" };
 
   // Rychlost poklesu hodnot za 1 sekundu (bdění)
   const DECAY = { hunger: 0.55, happy: 0.45, energy: 0.40, clean: 0.30 };
@@ -947,6 +1010,7 @@
 
     cat.classList.toggle("lying", a.pose === "lezici");
     cat.classList.toggle("has-beer", a.accessory === "pivo");
+    cat.classList.toggle("has-wine", a.accessory === "vino");
   }
 
   function buildLookPanel() {
@@ -1155,13 +1219,17 @@
 
   function drink() {
     if (state.sleeping) return;
-    state.happy = clamp(state.happy + 34);
-    floatEmoji("🍺", 4);
-    showSpeech("Na zdraví! 🍻");
-    // chvíli rozjařeně veselá (zhoupnutí + růžové tvářičky)
+    // víno má dvojnásobný efekt na veselou náladu než pivo
+    const wine = state.appearance.accessory === "vino";
+    state.happy = clamp(state.happy + (wine ? 68 : 34));
+    floatEmoji(wine ? "🍷" : "🍺", 4);
+    showSpeech(wine ? "Na zdraví! 🍷" : "Na zdraví! 🍻");
+    // chvíli rozjařeně veselá (zhoupnutí + růžové tvářičky); víno drží déle
+    // a navíc poskakuje + má šťastný obličej
     cat.classList.add("merry");
+    if (wine) cat.classList.add("merry-wine");
     clearTimeout(drink._t);
-    drink._t = setTimeout(() => { cat.classList.remove("merry"); render(); }, 6000);
+    drink._t = setTimeout(() => { cat.classList.remove("merry", "merry-wine"); render(); }, wine ? 12000 : 6000);
     after();
   }
 
