@@ -369,57 +369,99 @@
   /* ---------- Poloha: ležící ---------- */
   /* širší, nižší rámec – kočka leží podél */
   .cat.lying {
-    width: 210px;
+    width: 220px;
     height: 160px;
   }
-  /* hlava položená dole vlevo u země, lehce nakloněná */
+  /* hlava menší (scale), položená dole vlevo u země, lehce nakloněná */
   .cat.lying .head {
     top: auto;
     bottom: 0;
-    left: 0;
-    transform: rotate(-7deg);
+    left: -4px;
+    transform-origin: bottom left;
+    transform: rotate(-6deg) scale(.82);
   }
-  /* tělo – dlouhý ovál vpravo, mírně zvednutý */
+  /* tělo – hlavní masa: dlouhý nízký bochánek */
   .cat.lying .body {
-    left: auto;
-    right: 0;
+    left: 40px;
+    right: auto;
     transform: none;
-    width: 172px;
-    height: 66px;
-    bottom: 4px;
-    border-radius: 50% 50% 46% 46% / 64% 64% 42% 42%;
+    width: 142px;
+    height: 84px;
+    bottom: 0;
+    border-radius: 58px 64px 46px 46px / 60px 64px 42px 42px;
   }
-  /* světlejší podsada vpravo dole */
+  /* světlejší podsada dole na těle */
   .cat.lying .belly {
-    left: auto;
-    right: 12px;
+    left: 64px;
+    right: auto;
     transform: none;
-    width: 116px;
-    height: 30px;
-    bottom: 6px;
+    width: 108px;
+    height: 28px;
+    bottom: 4px;
     border-radius: 50%;
   }
-  /* tlapky schované pod tělem (jen vykukují) */
+  /* přední tlapky schované pod tělem (jen vykukují vepředu) */
   .cat.lying .paw {
     width: 30px;
-    height: 15px;
+    height: 16px;
     bottom: 0;
     border-radius: 12px 12px 10px 10px;
   }
-  .cat.lying .paw.left  { left: 118px; right: auto; }
-  .cat.lying .paw.right { left: 152px; right: auto; }
-  /* ocásek položený podél těla vpravo */
+  .cat.lying .paw.left  { left: 80px;  right: auto; }
+  .cat.lying .paw.right { left: 112px; right: auto; }
+  /* ocásek – vychází ze zadní části těla, zvedá se nad záda a stáčí se, zakulacený konec */
   .cat.lying .tail {
-    left: auto;
-    right: -8px;
-    bottom: 2px;
-    height: 50px;
-    animation: wagLie 2.8s ease-in-out infinite;
+    left: 113px;
+    right: auto;
+    bottom: 47px;
+    width: 70px;
+    height: 70px;
+    background: transparent;
+    border: 14px solid var(--cat);
+    border-bottom-color: transparent;
+    border-left-color: transparent;
+    border-radius: 50%;
+    z-index: 5;
+    transform-origin: 55px 55px;   /* otáčení kolem základny zanořené v těle */
+    animation: wagLie 3.2s ease-in-out infinite;
   }
+  /* zakulacené konce oblouku */
+  .cat.lying .tail::before,
+  .cat.lying .tail::after {
+    content: "";
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    background: var(--cat);
+    border-radius: 50%;
+  }
+  .cat.lying .tail::before { left: 34px; top: 34px; }   /* základna (zanořená v těle) */
+  .cat.lying .tail::after  { left: -6px; top: -6px; }   /* zaoblená špička */
   @keyframes wagLie {
-    0%, 100% { transform: rotate(74deg); }
-    50%      { transform: rotate(86deg); }
+    0%, 100% { transform: rotate(6deg); }
+    50%      { transform: rotate(16deg); }
   }
+  /* ležící – nadýchaný: silnější, huňatý ocas */
+  .cat.lying.tail-fluffy .tail {
+    left: 116px;
+    bottom: 44px;
+    border-width: 22px;
+    transform-origin: 52px 52px;
+  }
+  .cat.lying.tail-fluffy .tail::before,
+  .cat.lying.tail-fluffy .tail::after { width: 22px; height: 22px; }
+  .cat.lying.tail-fluffy .tail::before { left: 19px; top: 19px; }
+  .cat.lying.tail-fluffy .tail::after  { left: -15px; top: -15px; }
+  /* ležící – krátký: menší zatočení */
+  .cat.lying.tail-short .tail {
+    left: 127px;
+    bottom: 49px;
+    width: 54px;
+    height: 54px;
+    transform-origin: 41px 41px;
+  }
+  .cat.lying.tail-short .tail::before { left: 20px; top: 20px; }
+  .cat.lying.tail-short .tail::after  { left: -8px; top: -8px; }
 
   /* ---------- Animace akcí ---------- */
   .cat.jump   { animation: jump .55s ease; }
