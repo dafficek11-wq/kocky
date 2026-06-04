@@ -390,6 +390,91 @@
   /* víno jen pro sedící kočku – v leže se nezobrazuje */
   .cat.lying.has-wine .wine { display: none; }
 
+  /* ---------- Hračky (na zemi vedle kočky) ---------- */
+  .toy-yarn, .toy-ball, .toy-mouse {
+    display: none;
+    position: absolute;
+    left: -18px;
+    bottom: 2px;
+    z-index: 5;
+  }
+  /* klubíčko */
+  .cat.has-yarn .toy-yarn {
+    display: block;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background:
+      repeating-linear-gradient(48deg, rgba(0,0,0,.08) 0 4px, transparent 4px 9px),
+      repeating-linear-gradient(-48deg, rgba(255,255,255,.3) 0 4px, transparent 4px 9px),
+      #ef9bc4;
+    box-shadow: inset -4px -4px 0 rgba(0,0,0,.07);
+  }
+  .cat.has-yarn .toy-yarn::after {   /* nitka */
+    content: "";
+    position: absolute;
+    left: 24px; top: 17px;
+    width: 14px; height: 12px;
+    border: 2px solid #ef9bc4;
+    border-top: 0; border-left: 0;
+    border-radius: 0 0 12px 0;
+  }
+  /* barevný míček */
+  .cat.has-ball .toy-ball {
+    display: block;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: conic-gradient(#ff6b6b, #ffd166, #06d6a0, #4dabf7, #b197fc, #ff6b6b);
+    box-shadow: inset -4px -4px 0 rgba(0,0,0,.08), inset 4px 4px 0 rgba(255,255,255,.2);
+  }
+  /* myška na provázku */
+  .cat.has-mouse .toy-mouse {
+    display: block;
+    width: 28px; height: 16px;
+    background:
+      radial-gradient(circle at 14% 52%, #e98aa8 0 2.6px, transparent 3.1px),
+      radial-gradient(circle at 32% 40%, #2c2540 0 1.7px, transparent 2.1px),
+      #b9b3c4;
+    border-radius: 60% 50% 50% 55% / 75% 60% 60% 75%;
+  }
+  .cat.has-mouse .toy-mouse::before {   /* ouško */
+    content: "";
+    position: absolute;
+    left: 6px; top: -5px;
+    width: 11px; height: 11px;
+    background: #b9b3c4;
+    border-radius: 50%;
+  }
+  .cat.has-mouse .toy-mouse::after {    /* provázek */
+    content: "";
+    position: absolute;
+    right: -2px; top: -16px;
+    width: 20px; height: 18px;
+    border: 2px solid #c9a23b;
+    border-bottom: 0; border-left: 0;
+    border-radius: 0 14px 0 0;
+  }
+
+  /* ---------- Hraní si s hračkou (akce Hrát) ---------- */
+  /* míček i klubíčko se kutálí po zemi sem a tam (z jedné tlapky do druhé) */
+  .cat.playing.has-ball .toy-ball,
+  .cat.playing.has-yarn .toy-yarn {
+    animation: rollToy 1.5s ease-in-out infinite;
+  }
+  @keyframes rollToy {
+    0%   { transform: translateX(60px)  rotate(0deg); }
+    50%  { transform: translateX(134px) rotate(360deg); }
+    100% { transform: translateX(60px)  rotate(0deg); }
+  }
+  /* myška na provázku se houpe ze strany na stranu */
+  .cat.playing.has-mouse .toy-mouse {
+    transform-origin: 50% -12px;
+    animation: swingToy 1.1s ease-in-out infinite;
+  }
+  @keyframes swingToy {
+    0%, 100% { transform: translateX(74px)  rotate(-20deg); }
+    50%      { transform: translateX(106px) rotate(20deg); }
+  }
+
   /* ---------- Veselá nálada (po napití) ---------- */
   .cat.merry { animation: merry .9s ease-in-out infinite; }
   @keyframes merry {
@@ -788,6 +873,9 @@
         <div class="paw right"></div>
         <div class="beer"></div>
         <div class="wine"></div>
+        <div class="toy-yarn"></div>
+        <div class="toy-ball"></div>
+        <div class="toy-mouse"></div>
         <div class="body"></div>
         <div class="belly"></div>
         <div class="head">
@@ -872,6 +960,10 @@
       <div class="look-label">Doplněk</div>
       <div class="opt-row" id="accOpts"></div>
     </div>
+    <div class="look-section">
+      <div class="look-label">Hračka</div>
+      <div class="opt-row" id="toyOpts"></div>
+    </div>
   </aside>
   </div>
 
@@ -900,7 +992,7 @@
     energy: 100,  // energie
     clean: 100,   // čistota
     sleeping: false,
-    appearance: { color: "zrzava", pattern: "jednobarevna", eyes: "tmava", ears: "spicate", tail: "dlouhy", pose: "sedici", accessory: "zadny" },
+    appearance: { color: "zrzava", pattern: "jednobarevna", eyes: "tmava", ears: "spicate", tail: "dlouhy", pose: "sedici", accessory: "zadny", toy: "zadna" },
     lastTick: Date.now()
   };
 
@@ -930,6 +1022,7 @@
   const TAILS = { dlouhy: "Dlouhý", nadychany: "Nadýchaný", kratky: "Krátký" };
   const POSES = { sedici: "Sedící", lezici: "Ležící" };
   const ACCESSORIES = { zadny: "Žádný", pivo: "Pivo 🍺", vino: "Víno 🍷" };
+  const TOYS = { zadna: "Žádná", klubicko: "Klubíčko 🧶", micek: "Míček ⚽", myska: "Myška 🐭" };
 
   // Rychlost poklesu hodnot za 1 sekundu (bdění)
   const DECAY = { hunger: 0.55, happy: 0.45, energy: 0.40, clean: 0.30 };
@@ -1011,6 +1104,10 @@
     cat.classList.toggle("lying", a.pose === "lezici");
     cat.classList.toggle("has-beer", a.accessory === "pivo");
     cat.classList.toggle("has-wine", a.accessory === "vino");
+
+    cat.classList.toggle("has-yarn", a.toy === "klubicko");
+    cat.classList.toggle("has-ball", a.toy === "micek");
+    cat.classList.toggle("has-mouse", a.toy === "myska");
   }
 
   function buildLookPanel() {
@@ -1063,6 +1160,8 @@
     buildOptRow(el("poseOpts"), POSES, "pose");
     // Doplněk
     buildOptRow(el("accOpts"), ACCESSORIES, "accessory");
+    // Hračka
+    buildOptRow(el("toyOpts"), TOYS, "toy");
   }
 
   function buildOptRow(box, options, prop) {
@@ -1192,9 +1291,19 @@
     state.happy  = clamp(state.happy + 26);
     state.energy = clamp(state.energy - 12);
     state.hunger = clamp(state.hunger - 6);
-    animateCat("jump");
-    floatEmoji("🧶");
-    showSpeech("Jupí! 🐾");
+    const toy = state.appearance.toy;
+    if (toy && toy !== "zadna") {
+      // kočka si chvíli hraje s nasazenou hračkou (kutálení / houpání)
+      cat.classList.add("playing");
+      clearTimeout(play._t);
+      play._t = setTimeout(() => cat.classList.remove("playing"), 4000);
+      floatEmoji(toy === "klubicko" ? "🧶" : toy === "micek" ? "⚽" : "🐭");
+      showSpeech("Hurá, hračka! 🐾");
+    } else {
+      animateCat("jump");
+      floatEmoji("🧶");
+      showSpeech("Jupí! 🐾");
+    }
     after();
   }
 
@@ -1266,7 +1375,7 @@
 
   // ----- Nová hra -----
   function newGame(name) {
-    const keepLook = state.appearance || { color: "zrzava", pattern: "jednobarevna", eyes: "tmava", ears: "spicate", tail: "dlouhy", pose: "sedici", accessory: "zadny" };
+    const keepLook = state.appearance || { color: "zrzava", pattern: "jednobarevna", eyes: "tmava", ears: "spicate", tail: "dlouhy", pose: "sedici", accessory: "zadny", toy: "zadna" };
     state = {
       name: name || "Micka",
       hunger: 100, happy: 100, energy: 100, clean: 100,
@@ -1314,7 +1423,7 @@
     const hadSave = load();
     // Doplň chybějící klíče vzhledu (kvůli starším uloženým hrám)
     state.appearance = Object.assign(
-      { color: "zrzava", pattern: "jednobarevna", eyes: "tmava", ears: "spicate", tail: "dlouhy", pose: "sedici", accessory: "zadny" },
+      { color: "zrzava", pattern: "jednobarevna", eyes: "tmava", ears: "spicate", tail: "dlouhy", pose: "sedici", accessory: "zadny", toy: "zadna" },
       state.appearance || {}
     );
     buildLookPanel(); // až po načtení, ať panel ukazuje uložený vzhled
