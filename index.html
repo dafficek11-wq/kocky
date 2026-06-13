@@ -44,28 +44,42 @@
     box-shadow: 0 14px 40px rgba(120, 90, 140, .18);
     padding: 22px 22px 26px;
     width: 100%;
-    max-width: 440px;
   }
 
-  /* ---------- Responzivní rozložení (hra + vzhled vedle sebe) ---------- */
+  /* ---------- Rozložení: jeden sloupec přes celou šířku (scéna nahoře, panel dole) ---------- */
   .layout {
     display: flex;
-    flex-wrap: wrap;
-    gap: 18px;
+    flex-direction: column;
+    gap: 16px;
     width: 100%;
-    max-width: 800px;
-    justify-content: center;
+    max-width: 560px;
     align-items: stretch;
   }
   .layout > .card { margin: 0; }
-  .layout > .card:first-child { flex: 1 1 360px; }   /* hlavní karta s kočkou */
-  .look-card { flex: 1 1 230px; max-width: 300px; }
-  .look-title { margin: 2px 0 16px; font-size: 1.2rem; text-align: center; }
+  .look-title { margin: 2px 0 14px; font-size: 1.2rem; text-align: center; }
+
+  /* ---------- Záložky panelu vzhledu ---------- */
+  .tabs { display: flex; gap: 6px; margin-bottom: 16px; }
+  .tab {
+    flex: 1 1 0;
+    border: 0;
+    border-radius: 12px;
+    padding: 9px 4px;
+    font-size: .82rem;
+    font-weight: 700;
+    color: var(--ink);
+    background: #f0e8f5;
+    cursor: pointer;
+    transition: background .15s, color .15s, transform .08s;
+  }
+  .tab:active { transform: translateY(1px); }
+  .tab.is-active { background: var(--accent); color: #fff; box-shadow: 0 3px 0 var(--accent-dark); }
+  .tab-panel.is-hidden { display: none; }
 
   /* ---------- Scéna s kočkou ---------- */
   .scene {
     position: relative;
-    height: 240px;
+    height: 330px;
     border-radius: 20px;
     background: linear-gradient(180deg, #fef6ff 0%, #f1e6ff 100%);
     overflow: hidden;
@@ -74,11 +88,57 @@
     justify-content: center;
   }
   .scene.sleeping { background: linear-gradient(180deg, #2c2547 0%, #3d3266 100%); }
+  #catCanvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 4; }
+  /* během přechodu na canvas skryjeme starou CSS kočku (smaže se v úklidové fázi) */
+  #cat, #friend { display: none !important; }
   .floor {
     position: absolute;
     bottom: 0; left: 0; right: 0;
     height: 46px;
     background: rgba(180,150,200,.18);
+  }
+
+  /* ---------- Prostředí (pozadí scény) ---------- */
+  /* Zahrada */
+  .scene.env-garden:not(.sleeping) { background: linear-gradient(180deg, #aee4ff 0%, #cdeeff 55%, #e7f8ff 100%); }
+  .scene.env-garden .floor { height: 56px; background: linear-gradient(#82d06c, #5cb04a); }
+  .scene.env-garden:not(.sleeping)::before {  /* sluníčko */
+    content: ""; position: absolute; top: 16px; right: 22px;
+    width: 42px; height: 42px; border-radius: 50%;
+    background: #ffe06a; box-shadow: 0 0 0 9px rgba(255,224,106,.35);
+    z-index: 0;
+  }
+  /* Ulice (cihlová zeď + dlažba) */
+  .scene.env-street:not(.sleeping) {
+    background-color: #cf7d57;
+    background-image:
+      repeating-linear-gradient(0deg,  rgba(0,0,0,0) 0 20px, #efe2d2 20px 24px),
+      repeating-linear-gradient(90deg, rgba(0,0,0,0) 0 44px, #efe2d2 44px 48px);
+  }
+  .scene.env-street .floor { height: 52px; background: linear-gradient(#aeb2bb, #8d919b); }
+  .scene.env-street:not(.sleeping)::before {  /* okno ve zdi */
+    content: ""; position: absolute; top: 22px; left: 22px;
+    width: 44px; height: 52px;
+    background: linear-gradient(160deg, #cdeaf7, #a9d6ec);
+    border: 5px solid #efe2d2;
+    z-index: 0;
+  }
+  /* Noc */
+  .scene.env-night:not(.sleeping) {
+    background:
+      radial-gradient(circle at 18% 24%, #fff 0 1.6px, transparent 2.2px),
+      radial-gradient(circle at 58% 16%, #fff 0 1.6px, transparent 2.2px),
+      radial-gradient(circle at 78% 34%, #fff 0 1.6px, transparent 2.2px),
+      radial-gradient(circle at 38% 40%, #fff 0 1.1px, transparent 1.7px),
+      radial-gradient(circle at 88% 60%, #fff 0 1.1px, transparent 1.7px),
+      linear-gradient(180deg, #1b2a4a 0%, #33305a 100%);
+  }
+  .scene.env-night .floor { height: 50px; background: rgba(70,90,130,.32); }
+  .scene.env-night:not(.sleeping)::before {  /* měsíc */
+    content: ""; position: absolute; top: 16px; right: 24px;
+    width: 34px; height: 34px; border-radius: 50%;
+    background: #f3f0d8; box-shadow: 0 0 0 7px rgba(243,240,216,.16);
+    z-index: 0;
   }
 
   .speech {
@@ -486,7 +546,7 @@
     height: 24px;
     z-index: 8;
   }
-  .cat.eating ~ .bowl { display: block; }   /* miska se ukáže při krmení */
+  .bowl { display: none !important; }   /* misku kreslí canvas (starý DOM prvek skryt) */
   .bowl::before {   /* miska */
     content: "";
     position: absolute;
@@ -637,6 +697,8 @@
     0%, 100% { transform: translateY(0); }
     50%      { transform: translateY(-12px); }
   }
+  /* když se spí, kamarád neposkakuje, jen klidně dýchá */
+  .friend.asleep { animation: breathe 3.4s ease-in-out infinite; }
   /* obě kočky se k sobě natočí a dívají se na sebe */
   .scene.has-friend #cat:not(.lying) .head  { transform: translateX(-50%) rotate(7deg); }
   .scene.has-friend .friend .head           { transform: translateX(-50%) rotate(-7deg); }
@@ -659,6 +721,73 @@
     0%   { transform: translateX(0) rotate(0deg); }
     50%  { transform: translateX(var(--dx)) rotate(360deg); }
     100% { transform: translateX(0) rotate(0deg); }
+  }
+
+  /* ---------- Povely (ovládání) ---------- */
+  /* běhání / honění míčku – cval: skok s nadlehčením (squash&stretch), náklon do směru */
+  .cat.cmd-run, .cat.cmd-chase { animation: cmdRun 1.4s ease-in-out infinite; }
+  @keyframes cmdRun {
+    0%   { transform: translateX(-78px) translateY(0)    rotate(-8deg) scale(1, 1); }
+    12%  { transform: translateX(-52px) translateY(-20px) rotate(-5deg) scale(.9, 1.12); }   /* odraz – protažení */
+    25%  { transform: translateX(0)     translateY(-2px)  rotate(0deg)  scale(1.08, .9); }    /* dopad – stlačení */
+    37%  { transform: translateX(52px)  translateY(-20px) rotate(5deg)  scale(.9, 1.12); }
+    50%  { transform: translateX(78px)  translateY(0)     rotate(8deg)  scale(1, 1); }
+    62%  { transform: translateX(52px)  translateY(-20px) rotate(5deg)  scale(.9, 1.12); }
+    75%  { transform: translateX(0)     translateY(-2px)  rotate(0deg)  scale(1.08, .9); }
+    87%  { transform: translateX(-52px) translateY(-20px) rotate(-5deg) scale(.9, 1.12); }
+    100% { transform: translateX(-78px) translateY(0)     rotate(-8deg) scale(1, 1); }
+  }
+  /* přední nohy se při cvalu střídají */
+  .cat.cmd-run .paw.left,  .cat.cmd-chase .paw.left  { animation: runPawA .35s ease-in-out infinite; }
+  .cat.cmd-run .paw.right, .cat.cmd-chase .paw.right { animation: runPawB .35s ease-in-out infinite; }
+  @keyframes runPawA { 0%,100% { transform: translateY(0) translateX(0); }      50% { transform: translateY(-10px) translateX(5px); } }
+  @keyframes runPawB { 0%,100% { transform: translateY(-10px) translateX(-5px); } 50% { transform: translateY(0) translateX(0); } }
+  /* ocásek vlaje za během */
+  .cat.cmd-run .tail, .cat.cmd-chase .tail { animation: runTail .35s ease-in-out infinite; }
+  @keyframes runTail { 0%,100% { transform: rotate(30deg); } 50% { transform: rotate(56deg); } }
+  /* jazyk (vyplázne se jen při čištění) */
+  .tongue {
+    position: absolute;
+    top: 80px; left: 50%;
+    transform: translateX(-50%);
+    width: 13px; height: 9px;
+    background: #f48aae;
+    border-radius: 0 0 7px 7px;
+    z-index: 7;
+    display: none;
+  }
+  /* čištění tlapek – kočka zvedne tlapku k tlamě, vyplázne jazyk a olizuje se */
+  .cat.cmd-groom .paw.right {
+    z-index: 8;
+    animation: groomPaw .55s ease-in-out infinite;
+  }
+  @keyframes groomPaw {
+    0%, 100% { transform: translate(-44px, -76px) rotate(-14deg); }
+    50%      { transform: translate(-44px, -70px) rotate(-14deg); }
+  }
+  .cat.cmd-groom .tongue {
+    display: block;
+    animation: groomLick .55s ease-in-out infinite;
+  }
+  @keyframes groomLick {
+    0%, 100% { height: 9px; }
+    50%      { height: 17px; }
+  }
+  /* honěný míček se kutálí sem a tam před kočkou */
+  .chase-ball {
+    position: absolute;
+    bottom: 34px;
+    left: 50%;
+    margin-left: -14px;
+    font-size: 1.6rem;
+    line-height: 1;
+    z-index: 9;
+    pointer-events: none;
+    animation: chaseBall .9s ease-in-out infinite;
+  }
+  @keyframes chaseBall {
+    0%, 100% { transform: translateX(-95px) rotate(0deg); }
+    50%      { transform: translateX(95px) rotate(360deg); }
   }
 
   /* ---------- Poloha: ležící ---------- */
@@ -860,6 +989,25 @@
   .btn-drink { background:#f0a818; box-shadow:0 5px 0 #c9860c; grid-column: span 2; }
   .btn-sleep { background:#5b8def; box-shadow:0 5px 0 #3a6bd0; grid-column: span 2; }
 
+  /* ---------- Povely (ovládání) ---------- */
+  .cmd-label { margin: 16px 2px 6px; font-size: .85rem; font-weight: 700; opacity: .7; }
+  .commands { display: flex; flex-wrap: wrap; gap: 8px; }
+  .cmd {
+    flex: 1 1 auto;
+    border: 0;
+    border-radius: 12px;
+    padding: 11px 10px;
+    font-size: .9rem;
+    font-weight: 700;
+    color: #fff;
+    cursor: pointer;
+    background: #8a7cff;
+    box-shadow: 0 4px 0 #6a5ce0;
+    transition: transform .08s, box-shadow .08s, opacity .2s;
+  }
+  .cmd:active { transform: translateY(3px); box-shadow: 0 1px 0 #6a5ce0; }
+  .cmd:disabled { opacity: .45; cursor: not-allowed; box-shadow: 0 4px 0 #6a5ce0; }
+
   .footer {
     display: flex;
     justify-content: space-between;
@@ -969,6 +1117,7 @@
   <div class="layout">
   <div class="card">
     <div class="scene" id="scene">
+      <canvas id="catCanvas"></canvas>
       <div class="floor"></div>
       <div class="speech" id="speech"></div>
       <div class="zzz">z</div>
@@ -993,6 +1142,7 @@
           <div class="cheek right"></div>
           <div class="nose"></div>
           <div class="mouth"></div>
+          <div class="tongue"></div>
           <div class="whisker l1"></div>
           <div class="whisker l2"></div>
           <div class="whisker r1"></div>
@@ -1014,11 +1164,14 @@
           <div class="cheek right"></div>
           <div class="nose"></div>
           <div class="mouth"></div>
+          <div class="tongue"></div>
           <div class="whisker l1"></div>
           <div class="whisker l2"></div>
           <div class="whisker r1"></div>
           <div class="whisker r2"></div>
         </div>
+        <div class="beer"></div>
+        <div class="wine"></div>
       </div>
       <div class="bowl"></div>
     </div>
@@ -1052,6 +1205,13 @@
       <button class="action btn-sleep" id="btnSleep">😴 Spát</button>
     </div>
 
+    <div class="cmd-label">🎮 Povely</div>
+    <div class="commands">
+      <button class="cmd" id="cmdRun">🏃 Běhat</button>
+      <button class="cmd" id="cmdChase">⚽ Honit míček</button>
+      <button class="cmd" id="cmdGroom">🧼 Čistit se</button>
+    </div>
+
     <div class="footer">
       <span id="moodText">Spokojená kočička 😊</span>
       <button class="link-btn" id="btnReset">Nová hra</button>
@@ -1061,45 +1221,64 @@
   <!-- Panel vzhledu (vedle kočky) -->
   <aside class="card look-card">
     <h2 class="look-title">Vzhled 🎨</h2>
-    <div class="look-section">
-      <div class="look-label">Barva srsti</div>
-      <div class="swatches" id="colorOpts"></div>
+
+    <div class="tabs">
+      <button type="button" class="tab is-active" data-tab="kocka">🐱 Kočka</button>
+      <button type="button" class="tab" data-tab="doplnky">🎀 Doplňky</button>
+      <button type="button" class="tab" data-tab="scena">🌳 Scéna</button>
     </div>
-    <div class="look-section">
-      <div class="look-label">Vzor</div>
-      <div class="opt-row" id="patternOpts"></div>
+
+    <div class="tab-panel" data-panel="kocka">
+      <div class="look-section">
+        <div class="look-label">Barva srsti</div>
+        <div class="swatches" id="colorOpts"></div>
+      </div>
+      <div class="look-section">
+        <div class="look-label">Vzor</div>
+        <div class="opt-row" id="patternOpts"></div>
+      </div>
+      <div class="look-section">
+        <div class="look-label">Oči</div>
+        <div class="swatches" id="eyeOpts"></div>
+      </div>
+      <div class="look-section">
+        <div class="look-label">Uši</div>
+        <div class="opt-row" id="earOpts"></div>
+      </div>
+      <div class="look-section">
+        <div class="look-label">Ocásek</div>
+        <div class="opt-row" id="tailOpts"></div>
+      </div>
+      <div class="look-section">
+        <div class="look-label">Poloha</div>
+        <div class="opt-row" id="poseOpts"></div>
+      </div>
     </div>
-    <div class="look-section">
-      <div class="look-label">Oči</div>
-      <div class="swatches" id="eyeOpts"></div>
+
+    <div class="tab-panel is-hidden" data-panel="doplnky">
+      <div class="look-section">
+        <div class="look-label">Pití (drží v tlapce)</div>
+        <div class="opt-row" id="accOpts"></div>
+      </div>
+      <div class="look-section">
+        <div class="look-label">Hračka</div>
+        <div class="opt-row" id="toyOpts"></div>
+      </div>
+      <div class="look-section">
+        <div class="look-label">V misce</div>
+        <div class="opt-row" id="foodOpts"></div>
+      </div>
     </div>
-    <div class="look-section">
-      <div class="look-label">Uši</div>
-      <div class="opt-row" id="earOpts"></div>
-    </div>
-    <div class="look-section">
-      <div class="look-label">Ocásek</div>
-      <div class="opt-row" id="tailOpts"></div>
-    </div>
-    <div class="look-section">
-      <div class="look-label">Poloha</div>
-      <div class="opt-row" id="poseOpts"></div>
-    </div>
-    <div class="look-section">
-      <div class="look-label">Doplněk</div>
-      <div class="opt-row" id="accOpts"></div>
-    </div>
-    <div class="look-section">
-      <div class="look-label">Hračka</div>
-      <div class="opt-row" id="toyOpts"></div>
-    </div>
-    <div class="look-section">
-      <div class="look-label">V misce</div>
-      <div class="opt-row" id="foodOpts"></div>
-    </div>
-    <div class="look-section">
-      <div class="look-label">Barva kamaráda 🐱</div>
-      <div class="swatches" id="friendColorOpts"></div>
+
+    <div class="tab-panel is-hidden" data-panel="scena">
+      <div class="look-section">
+        <div class="look-label">Prostředí</div>
+        <div class="opt-row" id="envOpts"></div>
+      </div>
+      <div class="look-section">
+        <div class="look-label">Barva kamaráda 🐱</div>
+        <div class="swatches" id="friendColorOpts"></div>
+      </div>
     </div>
   </aside>
   </div>
@@ -1131,7 +1310,7 @@
     sleeping: false,
     hasFriend: false,
     friendColor: "seda",
-    appearance: { color: "rezava", pattern: "jednobarevna", eyes: "tmava", ears: "spicate", tail: "dlouhy", pose: "sedici", accessory: "zadny", toy: "zadna", food: "granule" },
+    appearance: { color: "rezava", pattern: "jednobarevna", eyes: "tmava", ears: "spicate", tail: "dlouhy", pose: "sedici", accessory: "zadny", toy: "zadna", food: "granule", env: "pokoj" },
     lastTick: Date.now()
   };
 
@@ -1164,6 +1343,7 @@
   const ACCESSORIES = { zadny: "Žádný", pivo: "Pivo 🍺", vino: "Víno 🍷" };
   const TOYS = { zadna: "Žádná", klubicko: "Klubíčko 🧶", micek: "Míček ⚽", myska: "Myška 🐭" };
   const FOODS = { granule: "Granule 🥣", mliko: "Mlíko 🥛" };
+  const ENVIRONMENTS = { pokoj: "Pokoj 🏠", zahrada: "Zahrada 🌳", ulice: "Ulice 🧱", noc: "Noc 🌙" };
 
   // Rychlost poklesu hodnot za 1 sekundu (bdění)
   const DECAY = { hunger: 0.55, happy: 0.45, energy: 0.40, clean: 0.30 };
@@ -1251,6 +1431,11 @@
     cat.classList.toggle("has-ball", a.toy === "micek");
     cat.classList.toggle("has-mouse", a.toy === "myska");
     cat.classList.toggle("food-milk", a.food === "mliko");
+
+    // Prostředí (pozadí scény)
+    scene.classList.toggle("env-garden", a.env === "zahrada");
+    scene.classList.toggle("env-street", a.env === "ulice");
+    scene.classList.toggle("env-night",  a.env === "noc");
   }
 
   // Barva kamaráda (druhá kočka) – vlastní paleta, nezávislá na hlavní kočce
@@ -1263,6 +1448,9 @@
     fr.style.setProperty("--cat-light", p.light);
     fr.classList.toggle("rainbow-fur", !!p.rainbow);
     fr.classList.toggle("white-paws", !!p.whitePaws);
+    // kamarád drží stejné pití jako hlavní kočka
+    fr.classList.toggle("has-beer", state.appearance.accessory === "pivo");
+    fr.classList.toggle("has-wine", state.appearance.accessory === "vino");
   }
 
   function buildLookPanel() {
@@ -1319,6 +1507,8 @@
     buildOptRow(el("toyOpts"), TOYS, "toy");
     // V misce (granule / mlíko)
     buildOptRow(el("foodOpts"), FOODS, "food");
+    // Prostředí
+    buildOptRow(el("envOpts"), ENVIRONMENTS, "env");
 
     // Barva kamaráda (vlastní paleta)
     const friendBox = el("friendColorOpts");
@@ -1362,6 +1552,7 @@
 
   function afterLook() {
     applyAppearance();
+    applyFriendColor();
     save();
   }
 
@@ -1381,6 +1572,7 @@
     // Spánek
     scene.classList.toggle("sleeping", state.sleeping);
     cat.classList.toggle("asleep", state.sleeping);
+    el("friend").classList.toggle("asleep", state.sleeping);
     el("btnSleep").textContent = state.sleeping ? "☀️ Probudit" : "😴 Spát";
     scene.classList.toggle("has-friend", !!state.hasFriend);
     el("btnFriend").textContent = state.hasFriend ? "👋 Rozloučit" : "🐱 Kamarád";
@@ -1424,6 +1616,9 @@
     el("btnClean").disabled = sleeping;
     el("btnDrink").disabled = sleeping;
     el("btnFriend").disabled = sleeping;
+    el("cmdRun").disabled = sleeping;
+    el("cmdChase").disabled = sleeping;
+    el("cmdGroom").disabled = sleeping;
   }
 
   // ----- Efekty -----
@@ -1530,6 +1725,50 @@
     after();
   }
 
+  // ----- Povely (ovládání kočky) -----
+  function command(name) {
+    if (state.sleeping) return;
+    cat.classList.remove("cmd-run", "cmd-chase", "cmd-groom");
+    document.querySelectorAll(".chase-ball").forEach((e) => e.remove());
+    clearTimeout(command._t);
+    let dur = 3000;
+    if (name === "run") {
+      cat.classList.add("cmd-run");
+      state.energy = clamp(state.energy - 4);
+      state.happy  = clamp(state.happy + 8);
+      showSpeech("Běžím! 🏃");
+    } else if (name === "chase") {
+      if (state.appearance.toy && state.appearance.toy !== "zadna" && typeof TOY !== "undefined") {
+        // hodí nasazenou hračku – kočka ji sleduje a plácne
+        TOY.vx = 260 + Math.random() * 170; TOY.vy = -(360 + Math.random() * 130);
+        state.energy = clamp(state.energy - 4);
+        state.happy  = clamp(state.happy + 8);
+        showSpeech("Chyť ho! 🐾");
+      } else {
+        cat.classList.add("cmd-chase");
+        const ball = document.createElement("div");
+        ball.className = "chase-ball";
+        ball.textContent = "⚽";
+        scene.appendChild(ball);
+        dur = 3600;
+        setTimeout(() => ball.remove(), dur);
+        state.energy = clamp(state.energy - 5);
+        state.happy  = clamp(state.happy + 10);
+        showSpeech("Chyť ho! ⚽");
+      }
+    } else if (name === "groom") {
+      cat.classList.add("cmd-groom");
+      state.clean = clamp(state.clean + 12);
+      state.happy = clamp(state.happy + 6);
+      floatEmoji("✨");
+      showSpeech("Čistím se… 🧼");
+    }
+    command._t = setTimeout(() => {
+      cat.classList.remove("cmd-run", "cmd-chase", "cmd-groom");
+    }, dur);
+    after();
+  }
+
   function drink() {
     if (state.sleeping) return;
     // víno má dvojnásobný efekt na veselou náladu než pivo
@@ -1538,11 +1777,18 @@
     floatEmoji(wine ? "🍷" : "🍺", 4);
     showSpeech(wine ? "Na zdraví! 🍷" : "Na zdraví! 🍻");
     // chvíli rozjařeně veselá (zhoupnutí + růžové tvářičky); víno drží déle
-    // a navíc poskakuje + má šťastný obličej
-    cat.classList.add("merry");
-    if (wine) cat.classList.add("merry-wine");
+    // a navíc poskakuje + má šťastný obličej – kamarád se přidá
+    const drinkers = [cat, el("friend")];
+    drinkers.forEach((elm) => {
+      if (!elm) return;
+      elm.classList.add("merry");
+      if (wine) elm.classList.add("merry-wine");
+    });
     clearTimeout(drink._t);
-    drink._t = setTimeout(() => { cat.classList.remove("merry", "merry-wine"); render(); }, wine ? 12000 : 6000);
+    drink._t = setTimeout(() => {
+      drinkers.forEach((elm) => elm && elm.classList.remove("merry", "merry-wine"));
+      render();
+    }, wine ? 12000 : 6000);
     after();
   }
 
@@ -1592,7 +1838,7 @@
 
   // ----- Nová hra -----
   function newGame(name) {
-    const keepLook = state.appearance || { color: "rezava", pattern: "jednobarevna", eyes: "tmava", ears: "spicate", tail: "dlouhy", pose: "sedici", accessory: "zadny", toy: "zadna", food: "granule" };
+    const keepLook = state.appearance || { color: "rezava", pattern: "jednobarevna", eyes: "tmava", ears: "spicate", tail: "dlouhy", pose: "sedici", accessory: "zadny", toy: "zadna", food: "granule", env: "pokoj" };
     const keepFriend = state.friendColor || "seda";
     state = {
       name: name || "Micka",
@@ -1615,6 +1861,21 @@
     el("btnClean").addEventListener("click", clean);
     el("btnFriend").addEventListener("click", toggleFriend);
     el("btnDrink").addEventListener("click", drink);
+    el("cmdRun").addEventListener("click", () => command("run"));
+    el("cmdChase").addEventListener("click", () => command("chase"));
+    el("cmdGroom").addEventListener("click", () => command("groom"));
+
+    // přepínání záložek panelu vzhledu
+    document.querySelectorAll(".tab").forEach((t) => {
+      t.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach((x) => x.classList.remove("is-active"));
+        t.classList.add("is-active");
+        const name = t.getAttribute("data-tab");
+        document.querySelectorAll(".tab-panel").forEach((p) => {
+          p.classList.toggle("is-hidden", p.getAttribute("data-panel") !== name);
+        });
+      });
+    });
     el("btnSleep").addEventListener("click", toggleSleep);
 
     el("btnReset").addEventListener("click", () => {
@@ -1637,6 +1898,647 @@
     startOverlay.classList.add("hidden");
   }
 
+  // ===== CAT: procedurální kreslení kočky (canvas, jednotkový prostor, y nahoru) =====
+  const CAT = (function () {
+    // hladká uzavřená křivka skrz body (kontrolní body = vrcholy, hrany přes středy)
+    function smoothClosed(ctx, p) {
+      const n = p.length; if (n < 3) return;
+      ctx.beginPath();
+      ctx.moveTo((p[n - 1][0] + p[0][0]) / 2, (p[n - 1][1] + p[0][1]) / 2);
+      for (let i = 0; i < n; i++) {
+        const c = p[i], q = p[(i + 1) % n];
+        ctx.quadraticCurveTo(c[0], c[1], (c[0] + q[0]) / 2, (c[1] + q[1]) / 2);
+      }
+      ctx.closePath();
+    }
+    function ell(ctx, x, y, rx, ry, rot) {
+      ctx.beginPath(); ctx.ellipse(x, y, Math.abs(rx), Math.abs(ry), rot || 0, 0, Math.PI * 2);
+    }
+    // tlustá kulatá čára (noha/ocas) jako vyplněný tvar
+    function capsule(ctx, x1, y1, x2, y2, w) {
+      const dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy) || 1;
+      const nx = -dy / len * w / 2, ny = dx / len * w / 2;
+      ctx.beginPath();
+      ctx.moveTo(x1 + nx, y1 + ny);
+      ctx.lineTo(x2 + nx, y2 + ny);
+      ctx.arc(x2, y2, w / 2, Math.atan2(ny, nx), Math.atan2(-ny, -nx), false);
+      ctx.lineTo(x1 - nx, y1 - ny);
+      ctx.arc(x1, y1, w / 2, Math.atan2(-ny, -nx), Math.atan2(ny, nx), false);
+      ctx.closePath();
+    }
+
+    function defaultParams() {
+      const p = PALETTES.rezava;
+      return {
+        fur: p.cat, dark: p.dark, light: p.light, eye: EYES.tmava.color,
+        innerEar: "#f3b6c9", nose: "#e76a93",
+        ears: "pointed", tail: "dlouhy", tabby: false, rainbow: false, whitePaws: false, pose: "sit",
+        breath: 0, eyeOpen: 1, headTurn: 0, look: 0, tailSway: 0, earL: 0, earR: 0, mouth: 0
+      };
+    }
+
+    // ---- jednotlivé části (jednotkový prostor, y nahoru, počátek = dotyk se zemí) ----
+    function paw(ctx, x, P, fur) {
+      ctx.fillStyle = fur; ell(ctx, x, 7, 16, 10); ctx.fill();
+    }
+    function frontLeg(ctx, x, P, fur) {
+      ctx.fillStyle = fur; capsule(ctx, x, 60, x * 0.92, 9, 24); ctx.fill();
+      ctx.fillStyle = (P.whitePaws ? "#f3f0ea" : fur);
+      ell(ctx, x * 0.92, 7, 15, 10); ctx.fill();
+    }
+    function bodyShape(ctx) {
+      smoothClosed(ctx, [
+        [0, 2], [-44, 6], [-54, 34], [-52, 78], [-38, 120], [-22, 142],
+        [0, 148], [22, 142], [38, 120], [52, 78], [54, 34], [44, 6]
+      ]);
+    }
+    function headShape(ctx) {
+      smoothClosed(ctx, [
+        [0, 138], [-30, 144], [-47, 164], [-46, 194], [-30, 214], [-8, 222],
+        [0, 223], [8, 222], [30, 214], [46, 194], [47, 164], [30, 144]
+      ]);
+    }
+
+    function tabbyStroke(ctx) {
+      ctx.strokeStyle = "rgba(60,42,26,.18)"; ctx.lineWidth = 4.5; ctx.lineCap = "round";
+    }
+    function tabbyBody(ctx) {
+      ctx.save(); bodyShape(ctx); ctx.clip(); tabbyStroke(ctx);
+      for (let y = 26; y <= 134; y += 20) {
+        ctx.beginPath(); ctx.moveTo(-60, y - 6); ctx.quadraticCurveTo(0, y + 7, 60, y - 6); ctx.stroke();
+      }
+      ctx.restore();
+    }
+    function tabbyHead(ctx) {
+      ctx.save(); headShape(ctx); ctx.clip(); tabbyStroke(ctx);
+      for (let i = -1; i <= 1; i++) { ctx.beginPath(); ctx.moveTo(i * 11, 220); ctx.lineTo(i * 8, 196); ctx.stroke(); }
+      ctx.restore();
+    }
+
+    function drawCatUnits(ctx, P) {
+      const fur = P.fur, dark = P.dark, light = P.light;
+      let fill = fur;
+      if (P.rainbow) {
+        const g = ctx.createLinearGradient(-55, 232, 55, 8);
+        g.addColorStop(0, "#ff9aa2"); g.addColorStop(.2, "#ffd36e"); g.addColorStop(.4, "#b6f08a");
+        g.addColorStop(.6, "#7fe0d8"); g.addColorStop(.8, "#8ab6ff"); g.addColorStop(1, "#d79bff");
+        fill = g;
+      }
+      P._fill = fill;
+      const pawFill = P.whitePaws ? "#f3f0ea" : fill;
+
+      // kontaktní stín
+      ctx.save();
+      ctx.fillStyle = "rgba(40,30,50,.16)";
+      ell(ctx, 0, 4, 64, 11); ctx.fill();
+      ctx.restore();
+
+      // ocásek (za tělem)
+      const tw = P.tail === "nadychany" ? 28 : P.tail === "kratky" ? 18 : 18;
+      const tLen = P.tail === "kratky" ? 0.62 : 1;
+      ctx.save();
+      ctx.translate(42, 16);
+      ctx.rotate((P.tailSway || 0) * Math.PI / 180);
+      ctx.fillStyle = fur;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.quadraticCurveTo(48 * tLen, 18 * tLen, 40 * tLen, 78 * tLen);
+      ctx.lineWidth = tw; ctx.lineCap = "round"; ctx.strokeStyle = fill; ctx.stroke();
+      if (P.whitePaws) { // bílá špička ocasu
+        ctx.fillStyle = "#f3f0ea"; ell(ctx, 40 * tLen, 76 * tLen, tw / 2, tw / 2); ctx.fill();
+      }
+      ctx.restore();
+
+      // zadní packy (vykukují vepředu dole)
+      paw(ctx, -30, P, pawFill);
+      paw(ctx, 30, P, pawFill);
+
+      // tělo – tmavší podklad (stínování) + hlavní výplň
+      ctx.save();
+      ctx.translate(0, -3); ctx.fillStyle = dark; bodyShape(ctx); ctx.fill();
+      ctx.restore();
+      ctx.fillStyle = fill; bodyShape(ctx); ctx.fill();
+      if (P.tabby) tabbyBody(ctx);
+
+      // bříško (světlejší)
+      ctx.save();
+      ctx.fillStyle = light; ctx.globalAlpha = 0.9;
+      ell(ctx, 0, 52, 33, 46); ctx.fill();
+      ctx.restore();
+
+      // přední nohy
+      frontLeg(ctx, -16, P, fill);
+      frontLeg(ctx, 16, P, fill);
+
+      // hlava – podklad + výplň
+      ctx.save();
+      ctx.translate((P.headTurn || 0) * 0.4, 0);
+      // uši nejdřív (za hlavou – základna se schová pod hlavu = pevně nasazené)
+      drawEar(ctx, -1, P);
+      drawEar(ctx, 1, P);
+      ctx.save(); ctx.translate(0, -3); ctx.fillStyle = dark; headShape(ctx); ctx.fill(); ctx.restore();
+      ctx.fillStyle = fill; headShape(ctx); ctx.fill();
+      if (P.tabby) tabbyHead(ctx);
+
+      // tvářičky (blush)
+      ctx.fillStyle = "rgba(247,168,192,.5)";
+      ell(ctx, -30, 166, 10, 6); ctx.fill();
+      ell(ctx, 30, 166, 10, 6); ctx.fill();
+
+      // oči
+      drawEye(ctx, -22, 181, P);
+      drawEye(ctx, 22, 181, P);
+
+      // světlejší čumák (mulec)
+      ctx.save();
+      ctx.fillStyle = "rgba(255,250,246,.22)";
+      ell(ctx, 0, 159, 19, 14); ctx.fill();
+      ctx.restore();
+
+      // čumáček (malý srdíčkový nos)
+      ctx.fillStyle = P.nose;
+      ctx.beginPath();
+      ctx.moveTo(-5, 165); ctx.quadraticCurveTo(-5.5, 167.5, -2.5, 167.5);
+      ctx.quadraticCurveTo(0, 167.5, 0, 165.5); ctx.quadraticCurveTo(0, 167.5, 2.5, 167.5);
+      ctx.quadraticCurveTo(5.5, 167.5, 5, 165); ctx.lineTo(0, 160); ctx.closePath(); ctx.fill();
+      // pusa – malá roztomilá ω
+      ctx.strokeStyle = "rgba(90,62,48,.6)"; ctx.lineWidth = 2; ctx.lineCap = "round";
+      const mc = (P.mouth || 0) + 0.35; // jemný úsměv jako základ
+      ctx.beginPath();
+      ctx.moveTo(0, 160); ctx.lineTo(0, 156);
+      ctx.moveTo(0, 156); ctx.quadraticCurveTo(-3, 153 + mc * 3, -7, 156 + mc * 2.5);
+      ctx.moveTo(0, 156); ctx.quadraticCurveTo(3, 153 + mc * 3, 7, 156 + mc * 2.5);
+      ctx.stroke();
+
+      // vousky
+      ctx.strokeStyle = "rgba(80,60,45,.5)"; ctx.lineWidth = 1.6;
+      for (let s = -1; s <= 1; s += 2) {
+        for (let k = 0; k < 3; k++) {
+          ctx.beginPath();
+          ctx.moveTo(s * 10, 162 - k * 0.5);
+          ctx.quadraticCurveTo(s * 34, 166 - k * 6 + 4, s * 44, 168 - k * 9 + 6);
+          ctx.stroke();
+        }
+      }
+      ctx.restore(); // konec hlavy
+
+      // držené pití (jen vsedě) a olizování tlapky
+      if (P.held === "pivo") drawBeer(ctx);
+      else if (P.held === "vino") drawWine(ctx);
+      if (P.groom) drawGroom(ctx, P);
+    }
+
+    function drawEar(ctx, side, P) {
+      const fur = P._fill || P.fur;
+      const tw = (side < 0 ? P.earL : P.earR) || 0;
+      ctx.save();
+      ctx.translate(side * 22, 204);            // posazené na hlavě
+      ctx.scale(side, 1);                       // pravé ucho; levé zrcadlově
+      ctx.rotate(tw * 0.6 * Math.PI / 180);     // jemné cuknutí
+      ctx.fillStyle = fur;
+      if (P.ears === "round") {
+        // kulaté ucho – měkký zaoblený lalok
+        ctx.beginPath();
+        ctx.moveTo(-15, -2);
+        ctx.quadraticCurveTo(-19, 25, 0, 31);
+        ctx.quadraticCurveTo(19, 24, 14, -2);
+        ctx.closePath(); ctx.fill();
+        ctx.fillStyle = P.innerEar;
+        ctx.beginPath();
+        ctx.moveTo(-8, 3); ctx.quadraticCurveTo(-9, 19, 1, 22);
+        ctx.quadraticCurveTo(10, 17, 8, 3); ctx.closePath(); ctx.fill();
+      } else {
+        // špičaté ucho – menší, špičatější s mírně zaoblenou špičkou
+        ctx.beginPath();
+        ctx.moveTo(-15, -2);
+        ctx.quadraticCurveTo(-13, 22, -4, 33);   // vnitřní strana ke špičce
+        ctx.quadraticCurveTo(3, 39, 9, 33);      // jen mírně zaoblená špička
+        ctx.quadraticCurveTo(14, 22, 15, -2);    // vnější strana dolů
+        ctx.closePath(); ctx.fill();
+        ctx.fillStyle = P.innerEar;
+        ctx.beginPath();
+        ctx.moveTo(-8, 3);
+        ctx.quadraticCurveTo(-6, 20, -1, 26);
+        ctx.quadraticCurveTo(3, 29, 6, 26);
+        ctx.quadraticCurveTo(9, 18, 8, 3);
+        ctx.closePath(); ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function drawEye(ctx, x, ey, P) {
+      const open = Math.max(0.05, P.eyeOpen == null ? 1 : P.eyeOpen);
+      const look = (P.look || 0);
+      ctx.save();
+      if (P.happyEyes) { // ^^ veselé přivřené oči
+        ctx.strokeStyle = "#3a3450"; ctx.lineWidth = 3.4; ctx.lineCap = "round";
+        ctx.beginPath(); ctx.moveTo(x - 10, ey - 3); ctx.quadraticCurveTo(x, ey + 8, x + 10, ey - 3); ctx.stroke();
+        ctx.restore(); return;
+      }
+      if (open < 0.16) { // zavřené – obloučky
+        ctx.strokeStyle = "#3a3450"; ctx.lineWidth = 3; ctx.lineCap = "round";
+        ctx.beginPath(); ctx.moveTo(x - 10, ey); ctx.quadraticCurveTo(x, ey - 6, x + 10, ey); ctx.stroke();
+        ctx.restore(); return;
+      }
+      // velké roztomilé oko: jemné bělmo + barevná duhovka + velká kulatá zornička + velký odlesk
+      const ry = 15 * open;
+      ctx.fillStyle = "#fff"; ell(ctx, x, ey, 12.5, ry + 1); ctx.fill();
+      ctx.fillStyle = P.eye; ell(ctx, x + look * 3, ey, 11, Math.min(13.5, ry)); ctx.fill();           // velká duhovka
+      ctx.fillStyle = "#241f33"; ell(ctx, x + look * 3, ey, 7, Math.min(9, ry * 0.82)); ctx.fill();    // velká kulatá zornička
+      ctx.fillStyle = "rgba(255,255,255,.96)"; ell(ctx, x + look * 3 - 3.5, ey + 4.5, 3.6, 3.6); ctx.fill(); // velký odlesk
+      ctx.fillStyle = "rgba(255,255,255,.7)"; ell(ctx, x + look * 3 + 3.5, ey - 3.5, 1.9, 1.9); ctx.fill(); // malý odlesk
+      ctx.restore();
+    }
+
+    // ---- ležící kočka (hlava vlevo, podlouhlé tělo, ocas vpravo) ----
+    function drawCatLyingUnits(ctx, P) {
+      const fur = P.fur, dark = P.dark, light = P.light;
+      let fill = fur;
+      if (P.rainbow) {
+        const g = ctx.createLinearGradient(-95, 70, 95, 0);
+        g.addColorStop(0, "#ff9aa2"); g.addColorStop(.2, "#ffd36e"); g.addColorStop(.4, "#b6f08a");
+        g.addColorStop(.6, "#7fe0d8"); g.addColorStop(.8, "#8ab6ff"); g.addColorStop(1, "#d79bff");
+        fill = g;
+      }
+      P._fill = fill;
+      const pawFill = P.whitePaws ? "#f3f0ea" : fill;
+
+      ctx.save(); ctx.fillStyle = "rgba(40,30,50,.16)"; ell(ctx, 0, 3, 98, 12); ctx.fill(); ctx.restore();
+
+      // ocas vpravo, stočený nahoru
+      const tw = P.tail === "nadychany" ? 26 : 18, tl = P.tail === "kratky" ? 0.6 : 1;
+      ctx.save(); ctx.translate(84, 14); ctx.rotate((P.tailSway || 0) * Math.PI / 180);
+      ctx.strokeStyle = fill; ctx.lineWidth = tw; ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(36 * tl, 10 * tl, 30 * tl, 62 * tl); ctx.stroke();
+      if (P.whitePaws) { ctx.fillStyle = "#f3f0ea"; ell(ctx, 30 * tl, 60 * tl, tw / 2, tw / 2); ctx.fill(); }
+      ctx.restore();
+
+      // přední tlapky natažené dopředu (vlevo)
+      ctx.fillStyle = pawFill; ell(ctx, -94, 7, 20, 9); ctx.fill(); ell(ctx, -74, 7, 20, 9); ctx.fill();
+
+      // tělo – podlouhlý bochánek
+      function bodyL() {
+        smoothClosed(ctx, [[-72, 6], [-86, 28], [-64, 54], [-18, 66], [32, 66], [68, 54], [90, 30], [86, 8], [38, 2], [-34, 2]]);
+      }
+      ctx.save(); ctx.translate(0, -3); ctx.fillStyle = dark; bodyL(); ctx.fill(); ctx.restore();
+      ctx.fillStyle = fill; bodyL(); ctx.fill();
+      if (P.tabby) {
+        ctx.save(); bodyL(); ctx.clip(); tabbyStroke(ctx);
+        for (let x = -48; x <= 72; x += 20) { ctx.beginPath(); ctx.moveTo(x, 2); ctx.quadraticCurveTo(x - 6, 36, x, 66); ctx.stroke(); }
+        ctx.restore();
+      }
+      // bříško
+      ctx.save(); ctx.fillStyle = light; ctx.globalAlpha = .85; ell(ctx, 8, 16, 58, 15); ctx.fill(); ctx.restore();
+
+      // hlava vlevo
+      ctx.save(); ctx.translate(-64, 58 + (P.headTurn || 0) * 0.2);
+      for (let sd = -1; sd <= 1; sd += 2) {
+        const tw2 = (sd < 0 ? P.earL : P.earR) || 0;
+        ctx.save(); ctx.translate(sd * 22, 28); ctx.rotate((sd * 10 + tw2) * Math.PI / 180);
+        ctx.fillStyle = fill;
+        if (P.ears === "round") { ell(ctx, 0, 4, 15, 17); ctx.fill(); ctx.fillStyle = P.innerEar; ell(ctx, 0, 3, 8, 9); ctx.fill(); }
+        else {
+          ctx.beginPath(); ctx.moveTo(-15, -4); ctx.lineTo(13, -2); ctx.lineTo(-2, 26); ctx.closePath(); ctx.fill();
+          ctx.fillStyle = P.innerEar; ctx.beginPath(); ctx.moveTo(-9, 0); ctx.lineTo(8, 1); ctx.lineTo(-2, 18); ctx.closePath(); ctx.fill();
+        }
+        ctx.restore();
+      }
+      ctx.save(); ctx.translate(0, -3); ctx.fillStyle = dark; ell(ctx, 0, 0, 38, 34); ctx.fill(); ctx.restore();
+      ctx.fillStyle = fill; ell(ctx, 0, 0, 38, 34); ctx.fill();
+      ctx.fillStyle = "rgba(247,168,192,.5)"; ell(ctx, -22, -6, 9, 5); ctx.fill(); ell(ctx, 22, -6, 9, 5); ctx.fill();
+      drawEye(ctx, -15, 4, P); drawEye(ctx, 15, 4, P);
+      ctx.fillStyle = P.nose; ctx.beginPath(); ctx.moveTo(-5, -12); ctx.lineTo(5, -12); ctx.lineTo(0, -19); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+
+    function roundRectU(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.arcTo(x + w, y, x + w, y + r, r);
+      ctx.lineTo(x + w, y + h - r); ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+      ctx.lineTo(x + r, y + h); ctx.arcTo(x, y + h, x, y + h - r, r);
+      ctx.lineTo(x, y + r); ctx.arcTo(x, y, x + r, y, r); ctx.closePath();
+    }
+    // držené pivo (v jednotkovém prostoru, y nahoru) – u pravé přední tlapky
+    function drawBeer(ctx) {
+      ctx.save(); ctx.translate(24, 26);
+      const g = ctx.createLinearGradient(0, 0, 0, 30); g.addColorStop(0, "#f0a512"); g.addColorStop(1, "#ffd24a");
+      ctx.fillStyle = g; roundRectU(ctx, -11, 0, 22, 30, 4); ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,.5)"; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.strokeStyle = "#e0980f"; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(15, 14, 8, -1.1, 1.1); ctx.stroke();
+      ctx.fillStyle = "#fff"; ell(ctx, 0, 31, 12, 5); ctx.fill(); ell(ctx, -5, 33, 6, 4); ctx.fill(); ell(ctx, 6, 33, 6, 4); ctx.fill();
+      ctx.restore();
+    }
+    function drawWine(ctx) {
+      ctx.save(); ctx.translate(24, 22);
+      ctx.fillStyle = "rgba(228,222,234,.95)"; ell(ctx, 0, 0, 9, 3); ctx.fill();
+      ctx.strokeStyle = "rgba(228,222,234,.95)"; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(0, 1); ctx.lineTo(0, 13); ctx.stroke();
+      ctx.fillStyle = "#a52742"; ctx.beginPath();
+      ctx.moveTo(-10, 30); ctx.quadraticCurveTo(-12, 17, 0, 13); ctx.quadraticCurveTo(12, 17, 10, 30); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255,.18)"; ell(ctx, -3, 22, 3, 6); ctx.fill();
+      ctx.restore();
+    }
+    // olizování tlapky (čištění)
+    function drawGroom(ctx, P) {
+      const fur = P._fill || P.fur;
+      ctx.save(); ctx.translate(0, -3); ctx.fillStyle = P.dark; ell(ctx, -9, 132, 13, 16); ctx.fill(); ctx.restore();
+      ctx.fillStyle = fur; ell(ctx, -9, 135, 13, 16); ctx.fill();
+      const ln = 5 + 7 * (P.lick || 0);
+      ctx.fillStyle = "#f48aae";
+      roundRectU(ctx, -3, 150 - ln, 6, ln, 3); ctx.fill();
+    }
+    // hračka na zemi vedle kočky
+    function toyUnits(ctx, kind) {
+      ctx.save();
+      ctx.translate(-72, 9);
+      if (kind === "klubicko") {
+        ctx.fillStyle = "#ef9bc4"; ell(ctx, 0, 6, 14, 14); ctx.fill();
+        ctx.strokeStyle = "rgba(0,0,0,.10)"; ctx.lineWidth = 2;
+        for (let a = -2; a <= 2; a++) { ctx.beginPath(); ctx.moveTo(-13, 6 + a * 5); ctx.quadraticCurveTo(0, 6 + a * 2, 13, 6 + a * 5); ctx.stroke(); }
+      } else if (kind === "micek") {
+        const g = ctx.createLinearGradient(-14, 0, 14, 12);
+        g.addColorStop(0, "#ff6b6b"); g.addColorStop(.5, "#4dabf7"); g.addColorStop(1, "#06d6a0");
+        ctx.fillStyle = g; ell(ctx, 0, 6, 14, 14); ctx.fill();
+        ctx.fillStyle = "rgba(255,255,255,.25)"; ell(ctx, -4, 10, 4, 4); ctx.fill();
+      } else if (kind === "myska") {
+        ctx.fillStyle = "#b9b3c4"; ell(ctx, 0, 6, 16, 9); ctx.fill();
+        ctx.fillStyle = "#b9b3c4"; ell(ctx, -10, 11, 6, 6); ctx.fill();
+        ctx.fillStyle = "#e98aa8"; ell(ctx, 14, 5, 2.4, 2.4); ctx.fill();
+        ctx.strokeStyle = "#c9a23b"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(15, 7); ctx.quadraticCurveTo(28, 12, 26, 22); ctx.stroke();
+      }
+      ctx.restore();
+    }
+    // miska s jídlem před kočkou
+    function bowlUnits(ctx, milk) {
+      ctx.save();
+      ctx.fillStyle = milk ? "#fff" : "#b87f44"; ell(ctx, 0, 13, 28, 6.5); ctx.fill();
+      if (!milk) { ctx.fillStyle = "#8a5a2a"; for (let i = -3; i <= 3; i++) { ell(ctx, i * 7, 13 + (i % 2 ? 2 : 0), 3.2, 3.2); ctx.fill(); } }
+      else { ctx.fillStyle = "rgba(160,170,200,.25)"; ell(ctx, 0, 13, 28, 6.5); ctx.fill(); }
+      ctx.fillStyle = "#aeb8cc";
+      ctx.beginPath(); ctx.moveTo(-34, 14); ctx.quadraticCurveTo(0, 26, 34, 14);
+      ctx.quadraticCurveTo(30, 2, 0, 0); ctx.quadraticCurveTo(-30, 2, -34, 14); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+    function withBase(ctx, opts, fn) {
+      ctx.save();
+      ctx.translate(opts.cx, opts.groundY);
+      ctx.scale(opts.scale * (opts.flip ? -1 : 1), -opts.scale);
+      fn(ctx); ctx.restore();
+    }
+    function drawToy(ctx, opts, kind) { withBase(ctx, opts, (c) => toyUnits(c, kind)); }
+    function drawBowl(ctx, opts, milk) { withBase(ctx, opts, (c) => bowlUnits(c, milk)); }
+    // hračka na libovolném místě obrazovky (pro tahání/házení), y dolů
+    function drawToyAt(ctx, sx, sy, r, kind, spin) {
+      ctx.save(); ctx.translate(sx, sy); ctx.rotate(spin || 0);
+      // kontaktní stín pod hračkou
+      ctx.fillStyle = "rgba(40,30,50,.12)"; ctx.beginPath(); ctx.ellipse(0, r + 4, r, r * 0.35, 0, 0, 6.29); ctx.fill();
+      if (kind === "klubicko") {
+        ctx.fillStyle = "#ef9bc4"; ctx.beginPath(); ctx.arc(0, 0, r, 0, 6.29); ctx.fill();
+        ctx.strokeStyle = "rgba(0,0,0,.10)"; ctx.lineWidth = r * 0.18;
+        for (let a = -2; a <= 2; a++) { ctx.beginPath(); ctx.moveTo(-r, a * r * 0.36); ctx.quadraticCurveTo(0, a * r * 0.18, r, a * r * 0.36); ctx.stroke(); }
+      } else if (kind === "myska") {
+        ctx.fillStyle = "#b9b3c4"; ctx.beginPath(); ctx.ellipse(0, 0, r * 1.15, r * 0.7, 0, 0, 6.29); ctx.fill();
+        ctx.beginPath(); ctx.arc(-r * 0.75, -r * 0.3, r * 0.45, 0, 6.29); ctx.fill();
+        ctx.fillStyle = "#e98aa8"; ctx.beginPath(); ctx.arc(r * 1.0, 0, r * 0.18, 0, 6.29); ctx.fill();
+        ctx.strokeStyle = "#c9a23b"; ctx.lineWidth = r * 0.14; ctx.beginPath(); ctx.moveTo(r, r * 0.1); ctx.quadraticCurveTo(r * 1.9, r * 0.5, r * 1.7, r * 1.2); ctx.stroke();
+      } else { // míček
+        const g = ctx.createLinearGradient(-r, -r, r, r);
+        g.addColorStop(0, "#ff6b6b"); g.addColorStop(.5, "#4dabf7"); g.addColorStop(1, "#06d6a0");
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, r, 0, 6.29); ctx.fill();
+        ctx.fillStyle = "rgba(255,255,255,.3)"; ctx.beginPath(); ctx.arc(-r * 0.35, -r * 0.35, r * 0.28, 0, 6.29); ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function draw(ctx, opts) {
+      const P = opts.P;
+      ctx.save();
+      ctx.translate(opts.cx, opts.groundY);
+      ctx.scale(opts.scale * (opts.flip ? -1 : 1), -opts.scale);
+      ctx.translate(P.tx || 0, 0);                       // vodorovný pohyb (běh)
+      if (P.rot) ctx.rotate(P.rot * Math.PI / 180);      // náklon (kolem tlapek)
+      ctx.scale(P.sx || 1, P.sy || 1);                   // squash & stretch
+      ctx.translate(0, P.ty || 0);                       // svislý pohyb (skok/odraz)
+      if (P.breath) ctx.scale(1, 1 + P.breath * 0.02);   // dýchání
+      if (P.pose === "lie") drawCatLyingUnits(ctx, P);
+      else drawCatUnits(ctx, P);
+      ctx.restore();
+    }
+
+    return { draw, drawToy, drawBowl, drawToyAt, defaultParams, smoothClosed };
+  })();
+
+  // ===== TOY: chytatelná/házecí hračka (fyzika ve screen souřadnicích, y dolů) =====
+  const TOY = {
+    x: 0, y: 0, vx: 0, vy: 0, spin: 0, kind: null, dragging: false, inited: false,
+    rest(cx, gy) { this.x = cx - 120; this.y = gy; this.vx = this.vy = 0; this.spin = 0; this.inited = true; },
+    radius() { return 15 * (VIEW.scale || 1); },
+    update(dt, groundY, W) {
+      if (this.dragging || !this.inited) return;
+      this.vy += 1500 * dt;
+      this.x += this.vx * dt; this.y += this.vy * dt;
+      this.spin += this.vx * dt * 0.04;
+      const r = this.radius();
+      if (this.y > groundY) { this.y = groundY; this.vy *= -0.42; this.vx *= 0.72; if (Math.abs(this.vy) < 28) this.vy = 0; }
+      if (this.x < r + 6) { this.x = r + 6; this.vx *= -0.5; }
+      if (this.x > W - r - 6) { this.x = W - r - 6; this.vx *= -0.5; }
+      this.vx *= (1 - 1.4 * dt);
+      if (Math.abs(this.vx) < 3 && this.y >= groundY) this.vx = 0;
+    }
+  };
+
+  // ===== MAP: volby vzhledu (state.appearance) → parametry kreslení =====
+  const MAP = {
+    toParams(a) {
+      a = a || {};
+      const p = PALETTES[a.color] || PALETTES.rezava;
+      return {
+        fur: p.cat, dark: p.dark, light: p.light,
+        eye: (EYES[a.eyes] || EYES.tmava).color,
+        innerEar: "#f3b6c9", nose: "#e76a93",
+        ears: a.ears === "kulate" ? "round" : "pointed",
+        tail: a.tail || "dlouhy",
+        tabby: a.pattern === "mourovata",
+        rainbow: !!p.rainbow, whitePaws: !!p.whitePaws,
+        pose: a.pose === "lezici" ? "lie" : "sit",
+        held: a.accessory || "zadny",
+        breath: 0, eyeOpen: 1, headTurn: 0, look: 0, tailSway: 0, earL: 0, earR: 0, mouth: 0
+      };
+    }
+  };
+
+  // ===== VIEW: canvas, DPR sizing, vykreslovací smyčka =====
+  const VIEW = {
+    canvas: null, ctx: null, w: 0, h: 0, dpr: 1, frames: 0, last: 0, time: 0, freeze: false,
+    init() {
+      this.canvas = el("catCanvas");
+      if (!this.canvas) return;
+      this.ctx = this.canvas.getContext("2d");
+      window.__VIEW = this; // ladicí přístup (odstraní se v úklidu)
+      this.resize();
+      window.addEventListener("resize", () => this.resize());
+      if (window.ResizeObserver) {
+        this._ro = new ResizeObserver(() => this.resize());
+        this._ro.observe(scene);
+      }
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden && !this.freeze) { this.last = 0; requestAnimationFrame((t) => this.loop(t)); }
+      });
+      this.canvas.style.touchAction = "none";
+      this.canvas.addEventListener("pointerdown", (e) => POINTER.down(e));
+      this.canvas.addEventListener("pointermove", (e) => POINTER.move(e));
+      window.addEventListener("pointerup", () => POINTER.up());
+      requestAnimationFrame((t) => this.loop(t));
+    },
+    resize() {
+      const r = scene.getBoundingClientRect();
+      this.w = Math.max(1, Math.round(r.width));
+      this.h = Math.max(1, Math.round(r.height));
+      this.dpr = Math.min(window.devicePixelRatio || 1, 2);
+      this.canvas.style.width = this.w + "px";
+      this.canvas.style.height = this.h + "px";
+      this.canvas.width = Math.round(this.w * this.dpr);
+      this.canvas.height = Math.round(this.h * this.dpr);
+      this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    },
+    computeAnim(P, t, cl, blink) {
+      // idle (dýchání, ocásek, uši, mrkání)
+      P.breath = Math.sin(t * 1.7);
+      P.tailSway = 9 * Math.sin(t * 1.3) + 5 * Math.sin(t * 2.1);
+      P.earL = 2.5 * Math.sin(t * 0.8);
+      P.earR = 2.5 * Math.sin(t * 0.8 + 1.2);
+      if (t > (blink.next == null ? 1.5 : blink.next)) { blink.start = t; blink.next = t + 2.4 + Math.random() * 3.2; }
+      const bd = t - (blink.start == null ? -9 : blink.start);
+      P.eyeOpen = (bd >= 0 && bd < 0.17) ? Math.min(1, Math.abs(bd - 0.085) / 0.085) : 1;
+      // akce/výrazy z tříd
+      P.tx = 0; P.ty = 0; P.rot = 0; P.sx = 1; P.sy = 1; P.happyEyes = false;
+      P.mouth = cl.contains("sad") ? -1 : 0;
+      P.groom = cl.contains("cmd-groom");
+      P.lick = P.groom ? 0.5 + 0.5 * Math.sin(t * 9) : 0;
+      if (state.sleeping) { P.eyeOpen = 0; P.breath *= 0.5; P.tailSway *= 0.4; }
+      if (cl.contains("eating")) { P.ty += -5 * Math.abs(Math.sin(t * 4)); }
+      if (cl.contains("merry")) { P.rot += 4 * Math.sin(t * 6); P.mouth = 0.5; }
+      if (cl.contains("merry-wine")) { P.ty += 12 * Math.abs(Math.sin(t * 5)); P.happyEyes = true; P.mouth = 1; }
+      if (cl.contains("jump")) { P.ty += 32 * Math.max(0, Math.sin(t * 7)); }
+      if (cl.contains("wiggle")) { P.rot += 7 * Math.sin(t * 18); }
+      if (cl.contains("petting")) { P.happyEyes = true; P.rot += 1.6 * Math.sin(t * 22); } // předení při hlazení
+      if (cl.contains("cmd-run") || cl.contains("cmd-chase")) {
+        const T = 1.4, w = ((t % T) / T) * 2 * Math.PI, bob = Math.abs(Math.sin(w * 2));
+        P.tx = 70 * Math.sin(w); P.ty = 22 * bob; P.rot = 9 * Math.sin(w);
+        P.sy = 1 + 0.1 * bob; P.sx = 1 - 0.06 * bob; P.tailSway = 38 + 16 * Math.sin(t * 9);
+      }
+    },
+    drawFrame() {
+      const ctx = this.ctx;
+      ctx.clearRect(0, 0, this.w, this.h);
+      const hasFriend = state.hasFriend;
+      const scale = Math.min((this.h - 46) / 268, this.w / (hasFriend ? 360 : 210));
+      this.scale = scale;
+      const t = this.time, gy = this.h - 24;
+      this._blink = this._blink || {}; this._fblink = this._fblink || {};
+
+      // --- kamarád (vpravo, otočený k hlavní kočce) ---
+      if (hasFriend) {
+        const fP = MAP.toParams({ color: state.friendColor, eyes: "tmava", ears: "spicate", tail: "dlouhy", pattern: "jednobarevna", pose: "sedici", accessory: state.appearance.accessory });
+        this.computeAnim(fP, t + 1.3, el("friend").classList, this._fblink);
+        fP.headTurn = 6; fP.look = 0.7;
+        CAT.draw(ctx, { cx: this.w * 0.67, groundY: gy, scale: scale, flip: true, P: fP });
+      }
+
+      // --- hlavní kočka ---
+      const cx = hasFriend ? this.w * 0.33 : this.w * 0.5;
+      const opts = { cx: cx, groundY: gy, scale: scale };
+      const P = MAP.toParams(state.appearance);
+      this.computeAnim(P, t, cat.classList, this._blink);
+      if (hasFriend) { P.headTurn = 6; P.look = 0.7; }
+      // hračka – chytatelná a házecí
+      const toyKind = state.appearance.toy;
+      const hasToy = toyKind && toyKind !== "zadna";
+      if (hasToy) {
+        if (TOY.kind !== toyKind) { TOY.kind = toyKind; TOY.inited = false; }
+        if (!TOY.inited) TOY.rest(cx, gy);
+        TOY.update(this.dt || 0, gy, this.w);
+        // kočka sleduje hračku očima a hlavou
+        if (!hasFriend && !cat.classList.contains("cmd-run") && !cat.classList.contains("cmd-chase")) {
+          P.look = Math.max(-1, Math.min(1, (TOY.x - cx) / 130)); P.headTurn = P.look * 5;
+        }
+        // plácnutí: když hračka přiletí blízko k pomalé kočce, kočka ji odpálí
+        if (!TOY.dragging && Math.abs(TOY.x - cx) < 55 && TOY.y >= gy - 3 && Math.abs(TOY.vx) < 14) {
+          if (!this._batCd || this.time - this._batCd > 1.0) {
+            this._batCd = this.time;
+            TOY.vx = (TOY.x < cx ? -1 : 1) * (200 + Math.random() * 120);
+            TOY.vy = -(320 + Math.random() * 160);
+            state.happy = clamp(state.happy + 2);
+            cat.classList.add("wiggle"); clearTimeout(this._batT); this._batT = setTimeout(() => cat.classList.remove("wiggle"), 420);
+          }
+        }
+      }
+      CAT.draw(ctx, { cx: cx, groundY: gy, scale: scale, flip: false, P: P });
+      if (hasToy) CAT.drawToyAt(ctx, TOY.x, TOY.y, TOY.radius(), toyKind, TOY.spin);
+      if (cat.classList.contains("eating")) CAT.drawBowl(ctx, opts, state.appearance.food === "mliko");
+    },
+    loop(t) {
+      const dt = this.last ? Math.min((t - this.last) / 1000, 0.05) : 0;
+      this.last = t; this.dt = dt;
+      this.time += dt;
+      this.frames++;
+      this.drawFrame();
+      if (!document.hidden && !this.freeze) requestAnimationFrame((tt) => this.loop(tt));
+    },
+    renderOnce() { this.frames++; this.drawFrame(); }
+  };
+
+  // ===== POINTER: hraní myší/dotykem (hlazení + tahání/házení hračky) =====
+  const POINTER = {
+    mode: null, acc: 0, last: null,
+    _pos(e) { const r = VIEW.canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; },
+    _overCat(p) {
+      const sc = VIEW.scale || 1;
+      const cx = state.hasFriend ? VIEW.w * 0.33 : VIEW.w * 0.5, gy = VIEW.h - 24;
+      return Math.abs(p.x - cx) < 80 * sc && p.y > gy - 250 * sc && p.y < gy + 8;
+    },
+    down(e) {
+      const p = this._pos(e);
+      try { VIEW.canvas.setPointerCapture(e.pointerId); } catch (x) {}
+      // chytit hračku?
+      if (TOY.inited && state.appearance.toy !== "zadna" && Math.hypot(p.x - TOY.x, p.y - TOY.y) < TOY.radius() + 16) {
+        this.mode = "toy"; TOY.dragging = true; this.last = p; this._tv = { vx: 0, vy: 0 }; this._tt = performance.now();
+        return;
+      }
+      if (this._overCat(p)) { this.mode = "pet"; this.acc = 999; this.last = p; this._stroke(p); }
+    },
+    move(e) {
+      if (!this.mode) return;
+      const p = this._pos(e);
+      if (this.mode === "toy") {
+        const now = performance.now(), d = Math.max(8, now - this._tt);
+        this._tv = { vx: (p.x - this.last.x) / d * 1000, vy: (p.y - this.last.y) / d * 1000 };
+        TOY.x = p.x; TOY.y = p.y; this._tt = now; this.last = p;
+        return;
+      }
+      this.acc += Math.hypot(p.x - this.last.x, p.y - this.last.y); this.last = p;
+      if (this.acc > 32) { this.acc = 0; this._stroke(p); }
+    },
+    up() {
+      if (this.mode === "toy") {
+        TOY.dragging = false;
+        const cap = 900;
+        TOY.vx = Math.max(-cap, Math.min(cap, this._tv.vx));
+        TOY.vy = Math.max(-cap, Math.min(cap, this._tv.vy));
+        if (Math.abs(TOY.vx) + Math.abs(TOY.vy) > 60) { state.happy = clamp(state.happy + 4); render(); }
+      }
+      this.mode = null;
+    },
+    _stroke(p) {
+      if (state.sleeping) return;
+      state.happy = clamp(state.happy + 3);
+      floatEmoji("💗", 1);
+      cat.classList.add("petting");
+      clearTimeout(this._t); this._t = setTimeout(() => cat.classList.remove("petting"), 700);
+      if (!this._spoke || performance.now() - this._spoke > 2500) { this._spoke = performance.now(); showSpeech("Předu… 😽"); }
+      render();
+    }
+  };
+
   function init() {
     bindEvents();
     scheduleBlink();
@@ -1644,7 +2546,7 @@
     const hadSave = load();
     // Doplň chybějící klíče vzhledu (kvůli starším uloženým hrám)
     state.appearance = Object.assign(
-      { color: "rezava", pattern: "jednobarevna", eyes: "tmava", ears: "spicate", tail: "dlouhy", pose: "sedici", accessory: "zadny", toy: "zadna", food: "granule" },
+      { color: "rezava", pattern: "jednobarevna", eyes: "tmava", ears: "spicate", tail: "dlouhy", pose: "sedici", accessory: "zadny", toy: "zadna", food: "granule", env: "pokoj" },
       state.appearance || {}
     );
     // staré uložené hry s odebranou barvou (zrzavá/hnědá) → nastav rezavou
@@ -1659,6 +2561,9 @@
       el("nameInput").focus();
       render();
     }
+
+    // Vykreslovací smyčka (canvas)
+    VIEW.init(); window.__TOY = TOY; // ladicí přístup (odstraní se v úklidu)
 
     // Herní smyčka každou 1 s
     setInterval(tick, 1000);
