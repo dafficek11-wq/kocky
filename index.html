@@ -1739,8 +1739,9 @@
       showSpeech("Běžím! 🏃");
     } else if (name === "chase") {
       if (state.appearance.toy && state.appearance.toy !== "zadna" && typeof TOY !== "undefined") {
-        // hodí nasazenou hračku – kočka ji sleduje a plácne
+        // hodí nasazenou hračku a kočka se za ní rozběhne
         TOY.vx = 260 + Math.random() * 170; TOY.vy = -(360 + Math.random() * 130);
+        cat.classList.add("cmd-chase");
         state.energy = clamp(state.energy - 4);
         state.happy  = clamp(state.happy + 8);
         showSpeech("Chyť ho! 🐾");
@@ -2388,6 +2389,12 @@
       this.canvas.addEventListener("pointermove", (e) => POINTER.move(e));
       window.addEventListener("pointerup", () => POINTER.up());
       requestAnimationFrame((t) => this.loop(t));
+      // hlídač: kdyby smyčka z jakéhokoli důvodu přestala tikat, zatímco je hra vidět, znovu ji nastartuje
+      setInterval(() => {
+        if (document.hidden || this.freeze) return;
+        const now = (window.performance && performance.now) ? performance.now() : Date.now();
+        if (!this._beat || now - this._beat > 600) { this.last = 0; requestAnimationFrame((t) => this.loop(t)); }
+      }, 1000);
     },
     resize() {
       const r = scene.getBoundingClientRect();
@@ -2481,7 +2488,8 @@
       this.last = t; this.dt = dt;
       this.time += dt;
       this.frames++;
-      this.drawFrame();
+      this._beat = (window.performance && performance.now) ? performance.now() : Date.now();
+      try { this.drawFrame(); } catch (e) { /* chyba jednoho snímku nesmí shodit animaci */ }
       if (!document.hidden && !this.freeze) requestAnimationFrame((tt) => this.loop(tt));
     },
     renderOnce() { this.frames++; this.drawFrame(); }
