@@ -2481,13 +2481,17 @@
       this.canvas.addEventListener("pointerdown", (e) => POINTER.down(e));
       this.canvas.addEventListener("pointermove", (e) => POINTER.move(e));
       window.addEventListener("pointerup", () => POINTER.up());
+      this.renderOnce();                                   // okamžité první vykreslení (kočka je vidět hned)
       requestAnimationFrame((t) => this.loop(t));
-      // hlídač: kdyby smyčka z jakéhokoli důvodu přestala tikat, zatímco je hra vidět, znovu ji nastartuje
+      // hlídač: kdyby animační smyčka stála (zatímco je hra vidět), kočku stejně nakreslí a zkusí ji rozběhnout
       setInterval(() => {
         if (document.hidden || this.freeze) return;
         const now = (window.performance && performance.now) ? performance.now() : Date.now();
-        if (!this._beat || now - this._beat > 600) { this.last = 0; requestAnimationFrame((t) => this.loop(t)); }
-      }, 1000);
+        if (!this._beat || now - this._beat > 400) {
+          this.dt = 0.3; this.time += 0.3; try { this.drawFrame(); } catch (e) {}
+          this.last = 0; requestAnimationFrame((t) => this.loop(t));
+        }
+      }, 300);
     },
     resize() {
       const r = scene.getBoundingClientRect();
@@ -2529,6 +2533,9 @@
     },
     drawFrame() {
       const ctx = this.ctx;
+      // samoopravná velikost plátna (kdyby init proběhl před rozložením nebo se scéna změnila)
+      const sw = Math.max(1, Math.round(scene.clientWidth)), sh = Math.max(1, Math.round(scene.clientHeight));
+      if (sw !== this.w || sh !== this.h) this.resize();
       ctx.clearRect(0, 0, this.w, this.h);
       const hasFriend = state.hasFriend;
       const scale = Math.min((this.h - 46) / 268, this.w / (hasFriend ? 360 : 210));
