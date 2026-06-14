@@ -2310,6 +2310,80 @@
       ctx.restore();
     }
 
+    // ---- běžící kočka v profilu (na všech čtyřech, cval) ----
+    function runLeg(ctx, rx, ry, ph, w, col) {
+      const a = (ph - Math.floor(ph)) * 2 * Math.PI;
+      const fx = rx + Math.sin(a) * 17;                 // krok dopředu/dozadu
+      const lift = Math.max(0, -Math.cos(a)) * 20;      // zvednutí při švihu vpřed
+      const fy = 3 + lift;                              // chodidlo (nad zemí)
+      ctx.strokeStyle = col; ctx.lineWidth = w; ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(rx, ry);
+      ctx.quadraticCurveTo((rx + fx) / 2 + 4, (ry + fy) / 2, fx, fy); ctx.stroke();
+    }
+    function bodyRun(ctx) {
+      smoothClosed(ctx, [[-58, 52], [-52, 72], [-12, 80], [38, 76], [62, 60], [56, 42], [18, 36], [-32, 38], [-54, 42]]);
+    }
+    function drawRunCatUnits(ctx, P, ph) {
+      const fur = P.fur, dark = P.dark, light = P.light;
+      let fill = fur;
+      if (P.rainbow) {
+        const g = ctx.createLinearGradient(-90, 80, 110, 0);
+        g.addColorStop(0, "#ff9aa2"); g.addColorStop(.3, "#ffd36e"); g.addColorStop(.5, "#b6f08a");
+        g.addColorStop(.7, "#7fe0d8"); g.addColorStop(.85, "#8ab6ff"); g.addColorStop(1, "#d79bff");
+        fill = g;
+      }
+      const pawFill = P.whitePaws ? "#f3f0ea" : fill;
+      const a = ph * 2 * Math.PI, bob = Math.abs(Math.sin(a)) * 9;
+      ctx.save(); ctx.translate(0, bob);
+      // kontaktní stín (na zemi, neposouvá se s bobem)
+      ctx.save(); ctx.translate(0, -bob); ctx.fillStyle = "rgba(40,30,50,.16)"; ell(ctx, 6, 3, 72, 10); ctx.fill(); ctx.restore();
+      // ocas (vzadu, vlaje)
+      ctx.strokeStyle = fill; ctx.lineWidth = 16; ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(-54, 52); ctx.quadraticCurveTo(-92, 56 + Math.sin(a) * 10, -96, 92 + Math.sin(a) * 8); ctx.stroke();
+      if (P.whitePaws) { ctx.fillStyle = "#f3f0ea"; ell(ctx, -96, 92, 8, 8); ctx.fill(); }
+      // vzdálené nohy (tmavší, za tělem)
+      runLeg(ctx, 44, 44, ph + 0.10, 10, dark);
+      runLeg(ctx, -38, 46, ph + 0.60, 10, dark);
+      // tělo (podklad + výplň)
+      ctx.fillStyle = dark; ctx.save(); ctx.translate(0, 3); bodyRun(ctx); ctx.fill(); ctx.restore();
+      ctx.fillStyle = fill; bodyRun(ctx); ctx.fill();
+      // světlejší bříško
+      ctx.fillStyle = light; ctx.globalAlpha = .85; ell(ctx, 0, 46, 40, 12); ctx.fill(); ctx.globalAlpha = 1;
+      // blízké nohy (výplň, před tělem)
+      runLeg(ctx, 48, 46, ph + 0.50, 11, pawFill);
+      runLeg(ctx, -34, 48, ph + 0.00, 11, pawFill);
+      // hlava vpředu
+      ctx.save(); ctx.translate(80, 64);
+      // uši
+      ctx.fillStyle = fill;
+      for (let s = -1; s <= 1; s += 2) {
+        ctx.save(); ctx.translate(s * 6 - 4, 26); ctx.rotate(s * 0.2);
+        ctx.beginPath(); ctx.moveTo(-11, -2); ctx.quadraticCurveTo(-8, 16, 2, 24); ctx.quadraticCurveTo(9, 14, 11, -2); ctx.closePath(); ctx.fill();
+        ctx.restore();
+      }
+      ctx.fillStyle = fill; ell(ctx, 0, 0, 30, 27); ctx.fill();
+      // čumák/nos vpředu
+      ctx.fillStyle = fill; ell(ctx, 24, -4, 12, 11); ctx.fill();
+      ctx.fillStyle = P.nose; ell(ctx, 34, -5, 4, 3.5); ctx.fill();
+      // oko (profil – jedno)
+      ctx.fillStyle = "#fff"; ell(ctx, 12, 6, 8, 9); ctx.fill();
+      ctx.fillStyle = P.eye; ell(ctx, 13, 6, 6.5, 7.5); ctx.fill();
+      ctx.fillStyle = "#241f33"; ell(ctx, 14, 6, 4, 5); ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255,.9)"; ell(ctx, 12, 9, 2, 2); ctx.fill();
+      // vousky
+      ctx.strokeStyle = "rgba(80,60,45,.5)"; ctx.lineWidth = 1.4;
+      for (let k = -1; k <= 1; k++) { ctx.beginPath(); ctx.moveTo(30, -4); ctx.lineTo(48, -8 + k * 6); ctx.stroke(); }
+      ctx.restore(); // hlava
+      ctx.restore(); // bob
+    }
+    function drawRun(ctx, opts) {
+      ctx.save();
+      ctx.translate(opts.cx, opts.groundY);
+      ctx.scale(opts.scale * (opts.flip ? -1 : 1), -opts.scale);
+      drawRunCatUnits(ctx, opts.P, opts.phase || 0);
+      ctx.restore();
+    }
+
     function draw(ctx, opts) {
       const P = opts.P;
       ctx.save();
@@ -2325,7 +2399,7 @@
       ctx.restore();
     }
 
-    return { draw, drawToy, drawBowl, drawToyAt, defaultParams, smoothClosed };
+    return { draw, drawRun, drawToy, drawBowl, drawToyAt, defaultParams, smoothClosed };
   })();
 
   // ===== TOY: chytatelná/házecí hračka (fyzika ve screen souřadnicích, y dolů) =====
@@ -2456,20 +2530,18 @@
       const opts = { cx: cx, groundY: gy, scale: scale };
       const P = MAP.toParams(state.appearance);
       this.computeAnim(P, t, cat.classList, this._blink);
-      if (hasFriend) { P.headTurn = 6; P.look = 0.7; }
-      // hračka – chytatelná a házecí
+      const running = cat.classList.contains("cmd-run") || cat.classList.contains("cmd-chase");
+      // hračka – fyzika (běží i během honičky, aby hozený míček letěl)
       const toyKind = state.appearance.toy;
       const hasToy = toyKind && toyKind !== "zadna";
       if (hasToy) {
         if (TOY.kind !== toyKind) { TOY.kind = toyKind; TOY.inited = false; }
         if (!TOY.inited) TOY.rest(cx, gy);
         TOY.update(this.dt || 0, gy, this.w);
-        // kočka sleduje hračku očima a hlavou
-        if (!hasFriend && !cat.classList.contains("cmd-run") && !cat.classList.contains("cmd-chase")) {
+        if (!running && !hasFriend) {  // kočka sleduje hračku očima a hlavou
           P.look = Math.max(-1, Math.min(1, (TOY.x - cx) / 130)); P.headTurn = P.look * 5;
         }
-        // plácnutí: když hračka přiletí blízko k pomalé kočce, kočka ji odpálí
-        if (!TOY.dragging && Math.abs(TOY.x - cx) < 55 && TOY.y >= gy - 3 && Math.abs(TOY.vx) < 14) {
+        if (!running && !TOY.dragging && Math.abs(TOY.x - cx) < 55 && TOY.y >= gy - 3 && Math.abs(TOY.vx) < 14) {
           if (!this._batCd || this.time - this._batCd > 1.0) {
             this._batCd = this.time;
             TOY.vx = (TOY.x < cx ? -1 : 1) * (200 + Math.random() * 120);
@@ -2479,9 +2551,20 @@
           }
         }
       }
-      CAT.draw(ctx, { cx: cx, groundY: gy, scale: scale, flip: false, P: P });
-      if (hasToy) CAT.drawToyAt(ctx, TOY.x, TOY.y, TOY.radius(), toyKind, TOY.spin);
-      if (cat.classList.contains("eating")) CAT.drawBowl(ctx, opts, state.appearance.food === "mliko");
+      if (running) {
+        // kočka se postaví na všechny čtyři a cválá přes scénu (otáčí se na okrajích)
+        const runT = t * 2.0, amp = this.w * 0.30;
+        const rx = this.w * 0.5 + amp * Math.sin(runT);
+        const facingRight = Math.cos(runT) >= 0;
+        const phase = (t * 2.6) % 1;
+        if (hasToy) CAT.drawToyAt(ctx, TOY.x, TOY.y, TOY.radius(), toyKind, TOY.spin);
+        CAT.drawRun(ctx, { cx: rx, groundY: gy, scale: scale, flip: !facingRight, P: P, phase: phase });
+      } else {
+        if (hasFriend) { P.headTurn = 6; P.look = 0.7; }
+        CAT.draw(ctx, { cx: cx, groundY: gy, scale: scale, flip: false, P: P });
+        if (hasToy) CAT.drawToyAt(ctx, TOY.x, TOY.y, TOY.radius(), toyKind, TOY.spin);
+        if (cat.classList.contains("eating")) CAT.drawBowl(ctx, opts, state.appearance.food === "mliko");
+      }
     },
     loop(t) {
       const dt = this.last ? Math.min((t - this.last) / 1000, 0.05) : 0;
