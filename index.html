@@ -2483,13 +2483,15 @@
       window.addEventListener("pointerup", () => POINTER.up());
       this.renderOnce();                                   // okamžité první vykreslení (kočka je vidět hned)
       requestAnimationFrame((t) => this.loop(t));
-      // hlídač: kdyby animační smyčka stála (zatímco je hra vidět), kočku stejně nakreslí a zkusí ji rozběhnout
+      // hlídač: kdyby animační smyčka stála (i ve skryté kartě/preview, kde rAF spí),
+      // kočku stejně překresluje a zkusí smyčku rozběhnout
       setInterval(() => {
-        if (document.hidden || this.freeze) return;
+        if (this.freeze) return;
         const now = (window.performance && performance.now) ? performance.now() : Date.now();
         if (!this._beat || now - this._beat > 400) {
           this.dt = 0.3; this.time += 0.3; try { this.drawFrame(); } catch (e) {}
-          this.last = 0; requestAnimationFrame((t) => this.loop(t));
+          this.last = 0;
+          if (!document.hidden) requestAnimationFrame((t) => this.loop(t));
         }
       }, 300);
     },
