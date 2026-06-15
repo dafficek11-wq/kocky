@@ -2268,15 +2268,29 @@
       }
       ctx.restore();
     }
-    // miska s jídlem před kočkou
+    // miska s jídlem před kočkou – jídlo se kreslí navrch otvoru, aby bylo vidět
     function bowlUnits(ctx, milk) {
       ctx.save();
-      ctx.fillStyle = milk ? "#fff" : "#b87f44"; ell(ctx, 0, 13, 28, 6.5); ctx.fill();
-      if (!milk) { ctx.fillStyle = "#8a5a2a"; for (let i = -3; i <= 3; i++) { ell(ctx, i * 7, 13 + (i % 2 ? 2 : 0), 3.2, 3.2); ctx.fill(); } }
-      else { ctx.fillStyle = "rgba(160,170,200,.25)"; ell(ctx, 0, 13, 28, 6.5); ctx.fill(); }
+      // tělo misky (šedá) – širší otvor nahoře, užší dno
       ctx.fillStyle = "#aeb8cc";
-      ctx.beginPath(); ctx.moveTo(-34, 14); ctx.quadraticCurveTo(0, 26, 34, 14);
-      ctx.quadraticCurveTo(30, 2, 0, 0); ctx.quadraticCurveTo(-30, 2, -34, 14); ctx.closePath(); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(-34, 18); ctx.quadraticCurveTo(0, 28, 34, 18);
+      ctx.quadraticCurveTo(30, 2, 0, 0); ctx.quadraticCurveTo(-30, 2, -34, 18); ctx.closePath(); ctx.fill();
+      // jídlo v otvoru misky (velká, dobře viditelná plocha)
+      if (milk) {
+        ctx.fillStyle = "#f8fbff"; ell(ctx, 0, 18, 31, 9); ctx.fill();             // mlíko
+        ctx.fillStyle = "rgba(150,172,212,.40)"; ell(ctx, 7, 20, 14, 3); ctx.fill(); // jemný odlesk
+      } else {
+        ctx.fillStyle = "#9a6630"; ell(ctx, 0, 18, 31, 9); ctx.fill();             // podklad
+        ctx.fillStyle = "#d49a4c"; for (let i = -3; i <= 3; i++) { ell(ctx, i * 8.5, 18 + (i % 2 ? 2.4 : -2.2), 4, 3.6); ctx.fill(); }   // granule
+        ctx.fillStyle = "#a86a31"; for (let i = -3; i <= 2; i++) { ell(ctx, i * 8.5 + 4, 18 + (i % 2 ? -2.2 : 2.4), 2.8, 2.6); ctx.fill(); }
+      }
+      // přední lem misky – tenká linka u předního (spodního) okraje, povrch jídla zůstane vidět
+      ctx.strokeStyle = "#c2cadb"; ctx.lineWidth = 3.5; ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(-32, 15); ctx.quadraticCurveTo(0, 9, 32, 15); ctx.stroke();
+      // zadní okraj otvoru (jemný), ať miska působí plasticky
+      ctx.strokeStyle = "rgba(255,255,255,.35)"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(-31, 22); ctx.quadraticCurveTo(0, 27, 31, 22); ctx.stroke();
       ctx.restore();
     }
     function withBase(ctx, opts, fn) {
@@ -2621,7 +2635,8 @@
         if (hasFriend) { P.headTurn = 6; P.look = 0.7; }
         CAT.draw(ctx, { cx: cx, groundY: gy, scale: scale, flip: false, P: P });
         if (hasToy) CAT.drawToyAt(ctx, TOY.x, TOY.y, TOY.radius(), toyKind, TOY.spin);
-        if (cat.classList.contains("eating")) CAT.drawBowl(ctx, opts, state.appearance.food === "mliko");
+        // miska stojí na zemi před kočkou (níž a větší = obsah dobře vidět)
+        if (cat.classList.contains("eating")) CAT.drawBowl(ctx, { cx: cx, groundY: gy + 14, scale: scale * 1.35 }, state.appearance.food === "mliko");
       }
     },
     loop(t) {
