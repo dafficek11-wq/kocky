@@ -2327,12 +2327,14 @@
       ctx.lineWidth = wBot; ctx.beginPath(); ctx.moveTo(kx, ky); ctx.lineTo(cfx, cfy); ctx.stroke();
       ctx.fillStyle = col; ell(ctx, cfx, cfy, wBot * 0.72, wBot * 0.5); ctx.fill();
     }
+    function smoothstep(u) { return u * u * (3 - 2 * u); }
     // běžecký cyklus chodidla: stojná fáze (na zemi, jede dozadu) + švihová (zvedne se, obloukem dopředu)
+    // měkký náběh/doběh (smoothstep) = plynulý přechod bez cuknutí
     function gaitFoot(p, nx, reach, lift) {
       p -= Math.floor(p);
-      const ST = 0.55;                                  // podíl stojné fáze
-      if (p < ST) { const u = p / ST; return { x: nx + reach * (1 - 2 * u), y: 3 }; }     // došlap: zepředu dozadu po zemi
-      const u = (p - ST) / (1 - ST); return { x: nx + reach * (-1 + 2 * u), y: 3 + lift * Math.sin(u * Math.PI) };  // švih: zezadu dopředu obloukem
+      const ST = 0.58;
+      if (p < ST) { const u = smoothstep(p / ST); return { x: nx + reach * (1 - 2 * u), y: 3 }; }
+      const u = (p - ST) / (1 - ST); return { x: nx + reach * (-1 + 2 * smoothstep(u)), y: 3 + lift * Math.sin(u * Math.PI) };
     }
     function frontLegRun(ctx, sx, sy, p, w, col) {
       const f = gaitFoot(p, sx + 2, 13, 15);
@@ -2342,17 +2344,12 @@
       const f = gaitFoot(p, hx - 2, 13, 15);
       legIK(ctx, hx, hy, f.x, f.y, 20, 18, -1, w * 1.15, w * 0.8, col);
     }
-    // kulaté kompaktní tělo
+    // kulaté kompaktní tělo (hladká uzavřená křivka)
     function bodyRun(ctx, arch) {
-      ctx.beginPath();
-      ctx.moveTo(-40, 40);
-      ctx.quadraticCurveTo(-46, 58 + arch, -6, 62 + arch);  // kulatá klenutá záda
-      ctx.quadraticCurveTo(30, 62 + arch, 48, 52);          // k ramenům
-      ctx.quadraticCurveTo(56, 44, 48, 33);                 // hruď
-      ctx.quadraticCurveTo(36, 26, 4, 28);                  // břicho
-      ctx.quadraticCurveTo(-26, 28, -42, 33);               // břicho k zádi
-      ctx.quadraticCurveTo(-50, 37, -40, 40);               // záď
-      ctx.closePath();
+      smoothClosed(ctx, [
+        [-44, 40], [-22, 60 + arch], [16, 60 + arch], [44, 50],
+        [50, 38], [26, 28], [-12, 27], [-44, 33]
+      ]);
     }
     function drawRunCatUnits(ctx, P, ph) {
       const fur = P.fur, dark = P.dark, light = P.light;
@@ -2384,27 +2381,37 @@
       // blízké nohy (výplň, před tělem) – přední a zadní pár střídavě (cval)
       backLegRun(ctx, -28, 43, ph + 0.5, 11, pawFill);
       frontLegRun(ctx, 44, 41, ph, 11, pawFill);
-      // kulatá kočičí hlava vpředu (bez vystouplého čumáku)
-      ctx.save(); ctx.translate(60, 48);
+      // krk – plynulé napojení těla a hlavy (stejná barva = bez švu)
+      ctx.fillStyle = fill;
+      ctx.beginPath();
+      ctx.moveTo(33, 53); ctx.quadraticCurveTo(48, 59, 61, 55);
+      ctx.lineTo(63, 36); ctx.quadraticCurveTo(48, 31, 35, 38); ctx.closePath(); ctx.fill();
+      // hlava – propracovaný profil (temeno, čelo, jemný čumák, brada, líce)
+      ctx.save(); ctx.translate(60, 52);
       // uši (dvě na temeni)
       ctx.fillStyle = fill;
-      ctx.beginPath(); ctx.moveTo(-13, 11); ctx.quadraticCurveTo(-15, 27, -4, 26); ctx.quadraticCurveTo(0, 18, -2, 10); ctx.closePath(); ctx.fill();  // zadní ucho
-      ctx.beginPath(); ctx.moveTo(2, 11); ctx.quadraticCurveTo(4, 28, 14, 25); ctx.quadraticCurveTo(16, 14, 9, 9); ctx.closePath(); ctx.fill();        // přední ucho
-      ctx.fillStyle = P.innerEar; ctx.beginPath(); ctx.moveTo(4, 13); ctx.quadraticCurveTo(6, 23, 11, 21); ctx.quadraticCurveTo(12, 14, 8, 11); ctx.closePath(); ctx.fill();
-      // hlava (kulatá)
-      ctx.fillStyle = fill; ell(ctx, 0, 0, 23, 21); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(-12, 12); ctx.quadraticCurveTo(-15, 28, -4, 27); ctx.quadraticCurveTo(0, 19, -3, 11); ctx.closePath(); ctx.fill();  // zadní ucho
+      ctx.beginPath(); ctx.moveTo(3, 12); ctx.quadraticCurveTo(5, 29, 15, 26); ctx.quadraticCurveTo(17, 15, 10, 10); ctx.closePath(); ctx.fill();      // přední ucho
+      ctx.fillStyle = P.innerEar; ctx.beginPath(); ctx.moveTo(5, 14); ctx.quadraticCurveTo(7, 24, 12, 22); ctx.quadraticCurveTo(13, 15, 9, 12); ctx.closePath(); ctx.fill();
+      // tvar hlavy – profil (ne pouhá koule)
+      ctx.fillStyle = fill;
+      smoothClosed(ctx, [
+        [-20, 4], [-17, 16], [-2, 21], [12, 17], [21, 9],
+        [25, 1], [24, -6], [17, -12], [4, -15], [-12, -13], [-21, -5]
+      ]);
+      ctx.fill();
       // tvářička
-      ctx.fillStyle = "rgba(247,168,192,.45)"; ell(ctx, 11, -7, 6, 4); ctx.fill();
-      // malý nosík na přední hraně hlavy (žádný vystouplý čumák)
-      ctx.fillStyle = P.nose; ctx.beginPath(); ctx.moveTo(19, -1); ctx.lineTo(23, -3); ctx.lineTo(22, 1); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "rgba(247,168,192,.45)"; ell(ctx, 9, -6, 6, 4); ctx.fill();
+      // nosík na špičce čumáku
+      ctx.fillStyle = P.nose; ell(ctx, 23, -3, 3, 2.4); ctx.fill();
       // oko (velké roztomilé)
-      ctx.fillStyle = "#fff"; ell(ctx, 8, 4, 7, 8); ctx.fill();
-      ctx.fillStyle = P.eye; ell(ctx, 9, 4, 6, 7); ctx.fill();
-      ctx.fillStyle = "#241f33"; ell(ctx, 10, 4, 4, 5); ctx.fill();
-      ctx.fillStyle = "rgba(255,255,255,.92)"; ell(ctx, 8, 6.5, 2, 2); ctx.fill();
-      // krátké vousky
+      ctx.fillStyle = "#fff"; ell(ctx, 7, 4, 7, 8); ctx.fill();
+      ctx.fillStyle = P.eye; ell(ctx, 8, 4, 6, 7); ctx.fill();
+      ctx.fillStyle = "#241f33"; ell(ctx, 9, 4, 4, 5); ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255,.92)"; ell(ctx, 7, 6.5, 2, 2); ctx.fill();
+      // vousky
       ctx.strokeStyle = "rgba(80,60,45,.45)"; ctx.lineWidth = 1.2;
-      for (let k = -1; k <= 1; k++) { ctx.beginPath(); ctx.moveTo(19, 0); ctx.lineTo(30, -3 + k * 4); ctx.stroke(); }
+      for (let k = -1; k <= 1; k++) { ctx.beginPath(); ctx.moveTo(20, -2); ctx.lineTo(32, -5 + k * 4); ctx.stroke(); }
       ctx.restore(); // hlava
       ctx.restore(); // bob
     }
@@ -2565,9 +2572,9 @@
         this.computeAnim(fP, t + 1.3, el("friend").classList, this._fblink);
         if (mainRunning) {
           // kamarád taky běží a honí míček (v protipohybu, ať se nepřekrývají)
-          const rt = t * 2.0 + Math.PI, amp = this.w * 0.30;
+          const rt = t * 1.6 + Math.PI, amp = this.w * 0.30;
           const fx = this.w * 0.5 + amp * Math.sin(rt);
-          CAT.drawRun(ctx, { cx: fx, groundY: gy, scale: scale, flip: !(Math.cos(rt) >= 0), P: fP, phase: (t * 2.6 + 0.5) % 1 });
+          CAT.drawRun(ctx, { cx: fx, groundY: gy, scale: scale, flip: !(Math.cos(rt) >= 0), P: fP, phase: (t * 2.0 + 0.5) % 1 });
         } else {
           fP.headTurn = 6; fP.look = 0.7;
           CAT.draw(ctx, { cx: this.w * 0.67, groundY: gy, scale: scale, flip: true, P: fP });
@@ -2602,10 +2609,10 @@
       }
       if (running) {
         // kočka se postaví na všechny čtyři a cválá přes scénu (otáčí se na okrajích)
-        const runT = t * 2.0, amp = this.w * 0.30;
+        const runT = t * 1.6, amp = this.w * 0.30;
         const rx = this.w * 0.5 + amp * Math.sin(runT);
         const facingRight = Math.cos(runT) >= 0;
-        const phase = (t * 2.6) % 1;
+        const phase = (t * 2.0) % 1;
         if (hasToy) CAT.drawToyAt(ctx, TOY.x, TOY.y, TOY.radius(), toyKind, TOY.spin);
         CAT.drawRun(ctx, { cx: rx, groundY: gy, scale: scale, flip: !facingRight, P: P, phase: phase });
       } else {
