@@ -1656,9 +1656,11 @@
     state.hunger = clamp(state.hunger + 28);
     state.clean  = clamp(state.clean - 4);
     // před kočku se postaví miska s granulemi a kočka se k ní sklání a jí
+    // (s kamarádem jedí obě kočky naráz – každá má svou misku)
     cat.classList.add("eating");
+    const fr = el("friend"); if (state.hasFriend) fr.classList.add("eating");
     clearTimeout(feed._t);
-    feed._t = setTimeout(() => cat.classList.remove("eating"), 3600);
+    feed._t = setTimeout(() => { cat.classList.remove("eating"); fr.classList.remove("eating"); }, 3600);
     showSpeech(state.appearance.food === "mliko" ? "Mňam, mlíko! 😋" : "Mňam! 😋");
     after();
   }
@@ -2593,7 +2595,11 @@
           CAT.drawRun(ctx, { cx: fx, groundY: gy, scale: scale, flip: !(Math.cos(rt) >= 0), P: fP, phase: (t * 2.0 + 0.5) % 1 });
         } else {
           fP.headTurn = 6; fP.look = 0.7;
-          CAT.draw(ctx, { cx: this.w * 0.67, groundY: gy, scale: scale, flip: true, P: fP });
+          const fcx = this.w * 0.67;
+          CAT.draw(ctx, { cx: fcx, groundY: gy, scale: scale, flip: true, P: fP });
+          // kamarád má taky misku, když se krmí
+          if (el("friend").classList.contains("eating"))
+            CAT.drawBowl(ctx, { cx: fcx, groundY: gy + 14, scale: scale * 1.35 }, state.appearance.food === "mliko");
         }
       }
 
