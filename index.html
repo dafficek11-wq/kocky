@@ -2557,13 +2557,21 @@
       this.scale = scale;
       const t = this.time, gy = this.h - 24;
       this._blink = this._blink || {}; this._fblink = this._fblink || {};
+      const mainRunning = cat.classList.contains("cmd-run") || cat.classList.contains("cmd-chase");
 
-      // --- kamarád (vpravo, otočený k hlavní kočce) ---
+      // --- kamarád ---
       if (hasFriend) {
         const fP = MAP.toParams({ color: state.friendColor, eyes: "tmava", ears: "spicate", tail: "dlouhy", pattern: "jednobarevna", pose: "sedici", accessory: state.appearance.accessory });
         this.computeAnim(fP, t + 1.3, el("friend").classList, this._fblink);
-        fP.headTurn = 6; fP.look = 0.7;
-        CAT.draw(ctx, { cx: this.w * 0.67, groundY: gy, scale: scale, flip: true, P: fP });
+        if (mainRunning) {
+          // kamarád taky běží a honí míček (v protipohybu, ať se nepřekrývají)
+          const rt = t * 2.0 + Math.PI, amp = this.w * 0.30;
+          const fx = this.w * 0.5 + amp * Math.sin(rt);
+          CAT.drawRun(ctx, { cx: fx, groundY: gy, scale: scale, flip: !(Math.cos(rt) >= 0), P: fP, phase: (t * 2.6 + 0.5) % 1 });
+        } else {
+          fP.headTurn = 6; fP.look = 0.7;
+          CAT.draw(ctx, { cx: this.w * 0.67, groundY: gy, scale: scale, flip: true, P: fP });
+        }
       }
 
       // --- hlavní kočka ---
@@ -2571,7 +2579,7 @@
       const opts = { cx: cx, groundY: gy, scale: scale };
       const P = MAP.toParams(state.appearance);
       this.computeAnim(P, t, cat.classList, this._blink);
-      const running = cat.classList.contains("cmd-run") || cat.classList.contains("cmd-chase");
+      const running = mainRunning;
       // hračka – fyzika (běží i během honičky, aby hozený míček letěl)
       const toyKind = state.appearance.toy;
       const hasToy = toyKind && toyKind !== "zadna";
