@@ -2166,32 +2166,43 @@
       P._fill = fill;
       const pawFill = P.whitePaws ? "#f3f0ea" : fill;
 
-      ctx.save(); ctx.fillStyle = "rgba(40,30,50,.16)"; ell(ctx, 0, 3, 98, 12); ctx.fill(); ctx.restore();
+      ctx.save(); ctx.fillStyle = "rgba(40,30,50,.16)"; ell(ctx, 4, 3, 80, 11); ctx.fill(); ctx.restore();
+
+      // tlapička (sdílená pro přední i zadní) – stočená u těla, s prstíky
+      function pawL(px, py, w) {
+        ctx.fillStyle = pawFill; ell(ctx, px, py, w, w * 0.56); ctx.fill();
+        ctx.strokeStyle = "rgba(90,70,60,.22)"; ctx.lineWidth = 1.2; ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(px - w * 0.32, py + w * 0.2); ctx.lineTo(px - w * 0.32, py - w * 0.4);
+        ctx.moveTo(px + w * 0.04, py + w * 0.3); ctx.lineTo(px + w * 0.04, py - w * 0.42);
+        ctx.stroke();
+      }
 
       // ocas vpravo, stočený nahoru
       const tw = P.tail === "nadychany" ? 26 : 18, tl = P.tail === "kratky" ? 0.6 : 1;
-      ctx.save(); ctx.translate(84, 14); ctx.rotate((P.tailSway || 0) * Math.PI / 180);
+      ctx.save(); ctx.translate(64, 16); ctx.rotate((P.tailSway || 0) * Math.PI / 180);
       ctx.strokeStyle = fill; ctx.lineWidth = tw; ctx.lineCap = "round";
-      ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(36 * tl, 10 * tl, 30 * tl, 62 * tl); ctx.stroke();
-      if (P.whitePaws) { ctx.fillStyle = "#f3f0ea"; ell(ctx, 30 * tl, 60 * tl, tw / 2, tw / 2); ctx.fill(); }
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(34 * tl, 12 * tl, 28 * tl, 58 * tl); ctx.stroke();
+      if (P.whitePaws) { ctx.fillStyle = "#f3f0ea"; ell(ctx, 28 * tl, 56 * tl, tw / 2, tw / 2); ctx.fill(); }
       ctx.restore();
 
-      // přední tlapky natažené dopředu (vlevo)
-      ctx.fillStyle = pawFill; ell(ctx, -94, 7, 20, 9); ctx.fill(); ell(ctx, -74, 7, 20, 9); ctx.fill();
-
-      // tělo – podlouhlý bochánek
+      // tělo – kulatý bochánek (méně protáhlý)
       function bodyL() {
-        smoothClosed(ctx, [[-72, 6], [-86, 28], [-64, 54], [-18, 66], [32, 66], [68, 54], [90, 30], [86, 8], [38, 2], [-34, 2]]);
+        smoothClosed(ctx, [[-58, 10], [-68, 34], [-48, 56], [-10, 66], [32, 66], [62, 56], [72, 32], [64, 10], [28, 4], [-30, 4]]);
       }
       ctx.save(); ctx.translate(0, -3); ctx.fillStyle = dark; bodyL(); ctx.fill(); ctx.restore();
       ctx.fillStyle = fill; bodyL(); ctx.fill();
       if (P.tabby) {
         ctx.save(); bodyL(); ctx.clip(); tabbyStroke(ctx);
-        for (let x = -48; x <= 72; x += 20) { ctx.beginPath(); ctx.moveTo(x, 2); ctx.quadraticCurveTo(x - 6, 36, x, 66); ctx.stroke(); }
+        for (let x = -40; x <= 56; x += 18) { ctx.beginPath(); ctx.moveTo(x, 4); ctx.quadraticCurveTo(x - 6, 36, x, 66); ctx.stroke(); }
         ctx.restore();
       }
       // bříško
-      ctx.save(); ctx.fillStyle = light; ctx.globalAlpha = .85; ell(ctx, 8, 16, 58, 15); ctx.fill(); ctx.restore();
+      ctx.save(); ctx.fillStyle = light; ctx.globalAlpha = .85; ell(ctx, 6, 18, 46, 13); ctx.fill(); ctx.restore();
+
+      // všechny čtyři tlapky stočené u těla, kreslené přes tělo (i zadní jsou vidět)
+      pawL(46, 5, 16); pawL(61, 5, 16);     // zadní (vzadu vpravo)
+      pawL(-46, 5, 17); pawL(-29, 5, 17);   // přední (vpředu vlevo)
 
       // hlava vlevo – úplně stejná jako u sedící kočky (sdílená drawHead),
       // jen zmenšená a posazená na přední část ležícího tělíčka
@@ -2582,8 +2593,9 @@
           const rt = t * 1.6 + Math.PI, amp = this.w * 0.30;
           const fx = this.w * 0.5 + amp * Math.sin(rt);
           CAT.drawRun(ctx, { cx: fx, groundY: gy, scale: scale, flip: !(Math.cos(rt) >= 0), P: fP, phase: (t * 2.0 + 0.5) % 1 });
-        } else if (state.sleeping) {
-          // spánek: kamarád si taky lehne (obě kočky spí vedle sebe, hlavami k sobě)
+        } else if (state.sleeping || state.appearance.pose === "lezici") {
+          // leží i kamarád – při spánku i když je zvolená ležící poloha
+          // (obě kočky vedle sebe, hlavami k sobě)
           fP.pose = "lie"; fP.headTurn = 0;
           CAT.draw(ctx, { cx: this.w * 0.70, groundY: gy, scale: scale, flip: false, P: fP });
         } else {
@@ -2634,6 +2646,10 @@
         // spánek: kočka si lehne (s kamarádem leží obě, hlavami k sobě)
         P.pose = "lie"; P.headTurn = 0;
         CAT.draw(ctx, { cx: hasFriend ? this.w * 0.30 : cx, groundY: gy, scale: scale, flip: hasFriend, P: P });
+      } else if (hasFriend && state.appearance.pose === "lezici") {
+        // ležící poloha s kamarádem: obě kočky leží vedle sebe, hlavami k sobě
+        P.headTurn = 0;
+        CAT.draw(ctx, { cx: this.w * 0.30, groundY: gy, scale: scale, flip: true, P: P });
       } else {
         if (hasFriend) { P.headTurn = 6; P.look = 0.7; }
         CAT.draw(ctx, { cx: cx, groundY: gy, scale: scale, flip: false, P: P });
