@@ -2195,9 +2195,9 @@
       // bříško
       ctx.save(); ctx.fillStyle = light; ctx.globalAlpha = .85; ell(ctx, 6, 18, 46, 13); ctx.fill(); ctx.restore();
 
-      // všechny čtyři tlapky stočené u těla, kreslené přes tělo (i zadní jsou vidět)
-      pawL(46, 5, 16); pawL(61, 5, 16);     // zadní (vzadu vpravo)
-      pawL(-46, 5, 17); pawL(-29, 5, 17);   // přední (vpředu vlevo)
+      // jedna přední a jedna zadní tlapka stočená u těla (ať se nepřekrývají)
+      pawL(54, 5, 17);    // zadní (vzadu vpravo)
+      pawL(-40, 5, 18);   // přední (vpředu vlevo)
 
       // hlava vlevo – úplně stejná jako u sedící kočky (sdílená drawHead),
       // jen zmenšená a posazená na přední část ležícího tělíčka
