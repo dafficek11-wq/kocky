@@ -2169,9 +2169,9 @@
       ctx.save(); ctx.fillStyle = "rgba(40,30,50,.16)"; ell(ctx, 4, 3, 80, 11); ctx.fill(); ctx.restore();
 
       // tlapička – krátká nožička se zaoblenou packou na špičce (míří ven dle dir)
-      function pawL(px, py, w, dir) {
+      function pawL(px, py, w, dir, col) {
         dir = dir || 1;
-        ctx.fillStyle = pawFill;
+        ctx.fillStyle = col || pawFill;
         capsule(ctx, px - dir * w * 0.15, py + w * 0.18, px + dir * w * 0.62, py, w * 0.66); ctx.fill();
         ell(ctx, px + dir * w * 0.8, py, w * 0.6, w * 0.46); ctx.fill();   // packa (chodidlo)
       }
@@ -2198,9 +2198,11 @@
       // bříško
       ctx.save(); ctx.fillStyle = light; ctx.globalAlpha = .85; ell(ctx, 6, 18, 46, 13); ctx.fill(); ctx.restore();
 
-      // jedna přední (míří dopředu vlevo) a jedna zadní (míří dozadu vpravo)
-      pawL(48, 5, 17, 1);     // zadní
-      pawL(-40, 5, 18, -1);   // přední
+      // čtyři nohy: vzdálenější (tmavší, kousek za) + bližší noha v páru
+      pawL(40, 4, 15, 1, dark);      // zadní vzdálenější
+      pawL(52, 6, 17, 1, pawFill);   // zadní bližší
+      pawL(-32, 4, 16, -1, dark);    // přední vzdálenější
+      pawL(-44, 6, 18, -1, pawFill); // přední bližší
 
       // hlava vlevo – úplně stejná jako u sedící kočky (sdílená drawHead),
       // jen zmenšená a posazená na přední část ležícího tělíčka
