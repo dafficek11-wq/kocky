@@ -2168,14 +2168,9 @@
 
       ctx.save(); ctx.fillStyle = "rgba(40,30,50,.16)"; ell(ctx, 4, 3, 80, 11); ctx.fill(); ctx.restore();
 
-      // tlapička (sdílená pro přední i zadní) – stočená u těla, s prstíky
+      // tlapička (sdílená pro přední i zadní) – jednoduchá hladká packa (bez prstíků)
       function pawL(px, py, w) {
-        ctx.fillStyle = pawFill; ell(ctx, px, py, w, w * 0.56); ctx.fill();
-        ctx.strokeStyle = "rgba(90,70,60,.22)"; ctx.lineWidth = 1.2; ctx.lineCap = "round";
-        ctx.beginPath();
-        ctx.moveTo(px - w * 0.32, py + w * 0.2); ctx.lineTo(px - w * 0.32, py - w * 0.4);
-        ctx.moveTo(px + w * 0.04, py + w * 0.3); ctx.lineTo(px + w * 0.04, py - w * 0.42);
-        ctx.stroke();
+        ctx.fillStyle = pawFill; ell(ctx, px, py, w, w * 0.6); ctx.fill();
       }
 
       // ocas vpravo, stočený nahoru
