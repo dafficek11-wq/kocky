@@ -1629,13 +1629,14 @@
     showSpeech._t = setTimeout(() => speech.classList.remove("show"), 1300);
   }
 
-  function floatEmoji(symbol, count) {
+  function floatEmoji(symbol, count, xPct) {
     count = count || 3;
+    const base = (xPct == null ? 50 : xPct) - 15;   // střed shluku (výchozí = uprostřed)
     for (let i = 0; i < count; i++) {
       const s = document.createElement("div");
       s.className = "float-emoji";
       s.textContent = symbol;
-      s.style.left = (35 + Math.random() * 30) + "%";
+      s.style.left = (base + Math.random() * 30) + "%";
       s.style.bottom = (90 + Math.random() * 20) + "px";
       s.style.animationDelay = (i * 0.12) + "s";
       scene.appendChild(s);
@@ -2674,10 +2675,18 @@
   const POINTER = {
     mode: null, acc: 0, last: null,
     _pos(e) { const r = VIEW.canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; },
-    _overCat(p) {
-      const sc = VIEW.scale || 1;
-      const cx = state.hasFriend ? VIEW.w * 0.33 : VIEW.w * 0.5, gy = VIEW.h - 24;
-      return Math.abs(p.x - cx) < 80 * sc && p.y > gy - 250 * sc && p.y < gy + 8;
+    // která kočka je pod kurzorem? "main" / "friend" / null
+    _catAt(p) {
+      const sc = VIEW.scale || 1, gy = VIEW.h - 24;
+      if (!(p.y > gy - 250 * sc && p.y < gy + 8)) return null;
+      const lying = state.sleeping || state.appearance.pose === "lezici";
+      const mainCx = !state.hasFriend ? VIEW.w * 0.5 : (lying ? VIEW.w * 0.30 : VIEW.w * 0.33);
+      if (Math.abs(p.x - mainCx) < 85 * sc) return "main";
+      if (state.hasFriend) {
+        const fCx = lying ? VIEW.w * 0.70 : VIEW.w * 0.67;
+        if (Math.abs(p.x - fCx) < 85 * sc) return "friend";
+      }
+      return null;
     },
     down(e) {
       const p = this._pos(e);
@@ -2687,7 +2696,8 @@
         this.mode = "toy"; TOY.dragging = true; this.last = p; this._tv = { vx: 0, vy: 0 }; this._tt = performance.now();
         return;
       }
-      if (this._overCat(p)) { this.mode = "pet"; this.acc = 999; this.last = p; this._stroke(p); }
+      const who = this._catAt(p);
+      if (who) { this.mode = "pet"; this.petCat = who; this.acc = 999; this.last = p; this._stroke(p); }
     },
     move(e) {
       if (!this.mode) return;
@@ -2698,6 +2708,7 @@
         TOY.x = p.x; TOY.y = p.y; this._tt = now; this.last = p;
         return;
       }
+      const w2 = this._catAt(p); if (w2) this.petCat = w2;   // přejetím lze přejít na druhou kočku
       this.acc += Math.hypot(p.x - this.last.x, p.y - this.last.y); this.last = p;
       if (this.acc > 32) { this.acc = 0; this._stroke(p); }
     },
@@ -2713,10 +2724,13 @@
     },
     _stroke(p) {
       if (state.sleeping) return;
+      const who = this.petCat || "main";
+      const target = who === "friend" ? el("friend") : cat;
       state.happy = clamp(state.happy + 3);
-      floatEmoji("💗", 1);
-      cat.classList.add("petting");
-      clearTimeout(this._t); this._t = setTimeout(() => cat.classList.remove("petting"), 700);
+      floatEmoji("💗", 1, who === "friend" ? 68 : (state.hasFriend ? 33 : 50));
+      target.classList.add("petting");
+      this._petT = this._petT || {};
+      clearTimeout(this._petT[who]); this._petT[who] = setTimeout(() => target.classList.remove("petting"), 700);
       if (!this._spoke || performance.now() - this._spoke > 2500) { this._spoke = performance.now(); showSpeech("Předu… 😽"); }
       render();
     }
